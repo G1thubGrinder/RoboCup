@@ -82,7 +82,7 @@ kick_ball(Name):-
     player(Name,Team,_,position(X1,Y1),Kickpower,Speed,_),
     ball(position(BX,BY)),
 
-    % Check if player is close enough to kick the ball (within 1 adjacent square)
+    % Check if player is close enough to kick the ball (within the speed range)
     XDist is abs(BX - X1),
     YDist is abs(BY - Y1),
     XDist =< Speed,
@@ -92,8 +92,6 @@ kick_ball(Name):-
     goal_position(Team, position(GoalX, GoalY)),
     XDiff is GoalX - BX,
     YDiff is GoalY - BY,
-    %sign(XDiff, SX),
-    %sign(YDiff, SY),
 
     % Calculate the final position of the ball based on the kicking power
     calculate_x_y_distance(Kickpower, XDiff, YDiff, XDis, YDis),
