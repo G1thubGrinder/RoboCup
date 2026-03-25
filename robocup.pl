@@ -20,6 +20,7 @@ setup:-
     
     assertz(player(niner, team1, forward, position(0,0), 40, 8, 100)),
     assertz(player(peace, team1, forward, position(0,60), 20, 10, 100)),
+    assertz(player(hio, team1, defender, position(0,30), 10, 2, 100)),
     assertz(player(p, team2, forward, position(61,0), 30, 5, 100)),
     assertz(player(guy, team2, defender, position(110,30), 80, 3, 100)),
 
