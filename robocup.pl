@@ -16,6 +16,8 @@ setup:-
     assertz(ball(position(60, 0))),
 
     % work for niner to list the football player
+    % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
+    
     assertz(player(niner, team1, forward, position(0,0), 40, 8, 100)),
     assertz(player(peace, team1, forward, position(0,60), 20, 10, 100)),
     assertz(player(p, team2, forward, position(61,0), 30, 5, 100)),
