@@ -11,15 +11,19 @@ start_one_round:- setup, simulate_round.
 
 setup:-
     retractall(ball(position(_,_))),
+    retractall(score(_,_)),
     retractall(player(_,_,_,_,_,_,_)),
     
     assertz(ball(position(60, 0))),
 
+    assertz(score(0,0)),
+
     % work for niner to list the football player
-    assertz(player(niner, team1, forward, position(0,0), 40, 8, 100)),
-    assertz(player(peace, team1, forward, position(0,60), 20, 10, 100)),
-    assertz(player(p, team2, forward, position(61,0), 30, 5, 100)),
-    assertz(player(guy, team2, defender, position(110,30), 80, 3, 100)),
+    % player(Name,Team,Role,position(X1,Y1),Kickpower,Speed,Stamina)
+    assertz(player(niner, team1, forward, position(10,27), 40, 6, 100)),
+    assertz(player(peace, team1, forward, position(40,13), 20, 8, 100)),
+    assertz(player(p, team2, forward, position(82,15), 30, 5, 100)),
+    assertz(player(guy, team2, defender, position(112,22), 60, 4, 100)),
 
     ball(position(BX, BY)),
     format('The ball starts at position (~w, ~w)~n', [BX, BY]),
@@ -35,6 +39,7 @@ setup:-
         player(Name, team2, Role, _, _, _, _),
         format('  -- ~w -- plays as ~w~n', [Name, Role])
     ),
+    writeln(''),
     writeln('============================'),
     writeln('========Game Started========'),
     writeln('============================').
@@ -85,8 +90,8 @@ kick_ball(Name):-
     % Check if player is close enough to kick the ball (within the speed range)
     XDist is abs(BX - X1),
     YDist is abs(BY - Y1),
-    XDist =< Speed,
-    YDist =< Speed,
+    XDist =< sqrt(Speed),
+    YDist =< sqrt(Speed),
 
     % Kick toward opponent goal
     goal_position(Team, position(GoalX, GoalY)),
@@ -99,7 +104,7 @@ kick_ball(Name):-
     NewBY is BY + YDis,
     
     format(
-        '~n The ball is kicked from (~w, ~w) to (~w, ~w) by ~w ~n', 
+        '~nThe ball is kicked from (~w, ~w) to (~w, ~w) by ~w ~n', 
         [BX, BY, NewBX, NewBY, Name]
     ),
     retract(ball(position(BX, BY))),
@@ -112,10 +117,21 @@ kick_ball(Name):-
 check_goal :-
     ball(position(BX, BY)),
     ((BX >= 120, BY >= 27, BY =< 33) ->
-        write('***Goal for team1***');
+        write('***Goal for team1***'),
+        score(Team1,Team2),
+        NewTeam1 is Team1 + 1,
+        retract(score(Team1, Team2)),
+        assertz(score(NewTeam1, Team2)),
+        format('~nThe current score [team1 : team2] is [~w : ~w] ~n', [NewTeam1, Team2])
+        ;
     (BX =< 0, BY >= 27, BY =< 33) ->
-        write('***Goal for team2***')
-    ;
+        write('***Goal for team2***'),
+        score(Team1,Team2),
+        NewTeam2 is Team2 + 1,
+        retract(score(Team1, Team2)),
+        assertz(score(Team1, NewTeam2)),
+        format('~nThe current score [team1 : team2] is [~w : ~w] ~n', [Team1, NewTeam2])
+        ;
         false
     ).
 
@@ -125,13 +141,17 @@ check_goal :-
 
 simulate_round :-
     ball(position(BX,BY)),
-    format('~n Ball is now at (~w, ~w) | ', [BX, BY]),
+    format('~nBall is now at (~w, ~w) | ', [BX, BY]),
+    
+    % Every players move first
     forall(
-        player(Name, _, _, _, _, _, _),
-        (
-            move_towards_ball(Name),
-            ( kick_ball(Name) -> true ; true )
-        )
+        player(Name,_,_,_,_,_,_),
+        move_towards_ball(Name)
+    ),
+    % Then kick
+    forall(
+        player(Name,_,_,_,_,_,_),
+        ( kick_ball(Name) -> true ; true)
     ),
     ( check_goal ->
         true;
