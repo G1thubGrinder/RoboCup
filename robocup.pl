@@ -19,42 +19,36 @@ setup:-
 
     % work for niner to list the football player
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
-    
-    % tchounamenigga
-    
-    % real madrid galapagos
-    % 4-3-3 formation on the left half (field 120x60)
+
+    % real madrid 2-3-1 on left field side
     % Forwards (X=50, spread Y: 15, 30, 45)
-    assertz(player(ronaldo,  team1, forward,    position(50, 15), 40, 8,  100)),
-    assertz(player(bale,     team1, forward,    position(50, 30), 20, 10, 100)),
-    assertz(player(benzema,  team1, forward,    position(50, 45), 10, 2,  100)),
+   
+    assertz(player(ronaldo,     team1, forward,    position(50, 30), 20, 10, 100)),
+   
     % Midfielders (X=35, spread Y: 15, 30, 45)
     assertz(player(modric,   team1, midfield,   position(35, 15), 40, 8,  100)),
     assertz(player(casemiro, team1, midfield,   position(35, 30), 20, 10, 100)),
     assertz(player(kroos,    team1, midfield,   position(35, 45), 10, 2,  100)),
     % Defenders (X=15, spread Y: 10, 23, 37, 50)
-    assertz(player(carvajal, team1, defender,   position(15, 10), 10, 7,  100)),
     assertz(player(varane,   team1, defender,   position(15, 23), 10, 6,  100)),
     assertz(player(ramos,    team1, defender,   position(15, 37), 10, 6,  100)),
-    assertz(player(pepe,     team1, defender,   position(15, 50), 10, 7,  100)),
     % Goalkeeper (X=3, centre Y=30)
     assertz(player(navas,    team1, goalkeeper, position(3,  30), 10, 2,  100)),
 
 
-    % barcelona 2014 tiki-taka 4-3-3 on the right half (field 120x60)
+    % barcelona 2-3-1 on right field side
     % Forwards (X=70, spread Y: 15, 30, 45) — attack toward X=0
-    assertz(player(neymar,      team2, forward,    position(70, 15), 35, 9,  100)),
     assertz(player(suarez,       team2, forward,    position(70, 30), 45, 10, 100)),
-    assertz(player(messi,       team2, forward,    position(70, 45), 30, 9,  100)),
+   
     % Midfielders (X=85, spread Y: 15, 30, 45)
     assertz(player(iniesta,     team2, midfield,   position(85, 15), 30, 8,  100)),
     assertz(player(busquets,    team2, midfield,   position(85, 30), 20, 7,  100)),
     assertz(player(xavi,        team2, midfield,   position(85, 45), 30, 7,  100)),
     % Defenders (X=105, spread Y: 10, 23, 37, 50)
-    assertz(player(alves,       team2, defender,   position(105, 10), 15, 8, 100)),
+  
     assertz(player(pique,       team2, defender,   position(105, 23), 10, 6, 100)),
     assertz(player(mascherano,  team2, defender,   position(105, 37), 10, 6, 100)),
-    assertz(player(alba,        team2, defender,   position(105, 50), 15, 8, 100)),
+  
     % Goalkeeper (X=117, centre Y=30)
     assertz(player(bravo,       team2, goalkeeper, position(117, 30), 10, 2, 100)),
 
