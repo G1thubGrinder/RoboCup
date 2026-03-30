@@ -72,51 +72,7 @@ setup:-
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
 goal_position(team1, position(120, 30)).
-goal_position(team2, position(0, 30)).
-
-%----------------------------------------------------------------------
-% JSON Logging
-%----------------------------------------------------------------------
-
-init_log :-
-    retractall(log_stream(_)),
-    retractall(log_round_count(_)),
-    assertz(log_round_count(0)),
-    open('game_log.json', write, S),
-    assertz(log_stream(S)),
-    write(S, '{"field":{"width":120,"height":60},"rounds":['),
-    flush_output(S).
-
-log_state :-
-    log_stream(S),
-    log_round_count(N),
-    (N > 0 -> write(S, ',') ; true),
-    N1 is N + 1,
-    retract(log_round_count(_)),
-    assertz(log_round_count(N1)),
-    ball(position(BX, BY)),
-    format(S, '{"round":~w,"ball":{"x":~w,"y":~w},"players":[', [N1, BX, BY]),
-    findall(p(Name,Team,Role,X,Y),
-        player(Name,Team,Role,position(X,Y),_,_,_),
-        Players),
-    write_players_json(S, Players, true),
-    write(S, ']}'),
-    flush_output(S).
-
-write_players_json(_, [], _) :- !.
-write_players_json(S, [p(Name,Team,Role,X,Y)|Rest], First) :-
-    (First = true -> true ; write(S, ',')),
-    format(S, '{"name":"~w","team":"~w","role":"~w","x":~w,"y":~w}',
-           [Name, Team, Role, X, Y]),
-    write_players_json(S, Rest, false).
-
-finalize_log :-
-    log_stream(S),
-    write(S, ']}'),
-    nl(S),
-    close(S),
-    retract(log_stream(S)),
-    writeln('game_log.json written.').    
+goal_position(team2, position(0, 30)).    
 
 %----------------------------------------------------------------------
 % Useful function
@@ -199,7 +155,6 @@ check_goal :-
 %----------------------------------------------------------------------
 
 simulate_round :-
-    log_state,
     ball(position(BX,BY)),
     format('~n Ball is now at (~w, ~w) | ', [BX, BY]),
     forall(
