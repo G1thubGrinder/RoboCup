@@ -20,6 +20,8 @@ setup:-
     % work for niner to list the football player
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
     
+    % tchounamenigga
+    
     % real madrid galapagos
     % 4-3-3 formation on the left half (field 120x60)
     % Forwards (X=50, spread Y: 15, 30, 45)
