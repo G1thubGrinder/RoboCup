@@ -1,0 +1,497 @@
+{
+    "field": {
+        "width": 120,
+        "height": 60
+    },
+    "rounds": [
+        {
+            "round": 1,
+            "ball": {
+                "x": 60,
+                "y": 30
+            },
+            "players": [
+                {
+                    "name": "ronaldo",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 50,
+                    "y": 15
+                },
+                {
+                    "name": "bale",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 50,
+                    "y": 30
+                },
+                {
+                    "name": "benzema",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 50,
+                    "y": 45
+                },
+                {
+                    "name": "modric",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 35,
+                    "y": 15
+                },
+                {
+                    "name": "casemiro",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 35,
+                    "y": 30
+                },
+                {
+                    "name": "kroos",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 35,
+                    "y": 45
+                },
+                {
+                    "name": "carvajal",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 15,
+                    "y": 10
+                },
+                {
+                    "name": "varane",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 15,
+                    "y": 23
+                },
+                {
+                    "name": "ramos",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 15,
+                    "y": 37
+                },
+                {
+                    "name": "pepe",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 15,
+                    "y": 50
+                },
+                {
+                    "name": "navas",
+                    "team": "team1",
+                    "role": "goalkeeper",
+                    "x": 3,
+                    "y": 30
+                },
+                {
+                    "name": "neymar",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 70,
+                    "y": 15
+                },
+                {
+                    "name": "suarez",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 70,
+                    "y": 30
+                },
+                {
+                    "name": "messi",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 70,
+                    "y": 45
+                },
+                {
+                    "name": "iniesta",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 85,
+                    "y": 15
+                },
+                {
+                    "name": "busquets",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 85,
+                    "y": 30
+                },
+                {
+                    "name": "xavi",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 85,
+                    "y": 45
+                },
+                {
+                    "name": "alves",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 105,
+                    "y": 10
+                },
+                {
+                    "name": "pique",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 105,
+                    "y": 23
+                },
+                {
+                    "name": "mascherano",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 105,
+                    "y": 37
+                },
+                {
+                    "name": "alba",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 105,
+                    "y": 50
+                },
+                {
+                    "name": "bravo",
+                    "team": "team2",
+                    "role": "goalkeeper",
+                    "x": 117,
+                    "y": 30
+                }
+            ]
+        },
+        {
+            "round": 2,
+            "ball": {
+                "x": 29,
+                "y": 16
+            },
+            "players": [
+                {
+                    "name": "ronaldo",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 55,
+                    "y": 9
+                },
+                {
+                    "name": "bale",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 54,
+                    "y": 21
+                },
+                {
+                    "name": "benzema",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 51,
+                    "y": 44
+                },
+                {
+                    "name": "modric",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 42,
+                    "y": 11
+                },
+                {
+                    "name": "casemiro",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 42,
+                    "y": 23
+                },
+                {
+                    "name": "kroos",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 36,
+                    "y": 44
+                },
+                {
+                    "name": "carvajal",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 22,
+                    "y": 9
+                },
+                {
+                    "name": "varane",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 21,
+                    "y": 21
+                },
+                {
+                    "name": "ramos",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 20,
+                    "y": 34
+                },
+                {
+                    "name": "pepe",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 20,
+                    "y": 45
+                },
+                {
+                    "name": "navas",
+                    "team": "team1",
+                    "role": "goalkeeper",
+                    "x": 5,
+                    "y": 30
+                },
+                {
+                    "name": "neymar",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 65,
+                    "y": 8
+                },
+                {
+                    "name": "suarez",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 61,
+                    "y": 27
+                },
+                {
+                    "name": "messi",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 63,
+                    "y": 40
+                },
+                {
+                    "name": "iniesta",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 77,
+                    "y": 16
+                },
+                {
+                    "name": "busquets",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 79,
+                    "y": 29
+                },
+                {
+                    "name": "xavi",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 79,
+                    "y": 42
+                },
+                {
+                    "name": "alves",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 97,
+                    "y": 11
+                },
+                {
+                    "name": "pique",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 99,
+                    "y": 23
+                },
+                {
+                    "name": "mascherano",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 100,
+                    "y": 36
+                },
+                {
+                    "name": "alba",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 98,
+                    "y": 47
+                },
+                {
+                    "name": "bravo",
+                    "team": "team2",
+                    "role": "goalkeeper",
+                    "x": 116,
+                    "y": 30
+                }
+            ]
+        },
+        {
+            "round": 3,
+            "ball": {
+                "x": 34,
+                "y": 27
+            },
+            "players": [
+                {
+                    "name": "ronaldo",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 48,
+                    "y": 12
+                },
+                {
+                    "name": "bale",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 44,
+                    "y": 19
+                },
+                {
+                    "name": "benzema",
+                    "team": "team1",
+                    "role": "forward",
+                    "x": 50,
+                    "y": 43
+                },
+                {
+                    "name": "modric",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 35,
+                    "y": 14
+                },
+                {
+                    "name": "casemiro",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 52,
+                    "y": 23
+                },
+                {
+                    "name": "kroos",
+                    "team": "team1",
+                    "role": "midfield",
+                    "x": 38,
+                    "y": 43
+                },
+                {
+                    "name": "carvajal",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 29,
+                    "y": 11
+                },
+                {
+                    "name": "varane",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 27,
+                    "y": 22
+                },
+                {
+                    "name": "ramos",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 26,
+                    "y": 33
+                },
+                {
+                    "name": "pepe",
+                    "team": "team1",
+                    "role": "defender",
+                    "x": 27,
+                    "y": 43
+                },
+                {
+                    "name": "navas",
+                    "team": "team1",
+                    "role": "goalkeeper",
+                    "x": 7,
+                    "y": 30
+                },
+                {
+                    "name": "neymar",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 68,
+                    "y": 17
+                },
+                {
+                    "name": "suarez",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 51,
+                    "y": 27
+                },
+                {
+                    "name": "messi",
+                    "team": "team2",
+                    "role": "forward",
+                    "x": 55,
+                    "y": 37
+                },
+                {
+                    "name": "iniesta",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 70,
+                    "y": 18
+                },
+                {
+                    "name": "busquets",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 72,
+                    "y": 29
+                },
+                {
+                    "name": "xavi",
+                    "team": "team2",
+                    "role": "midfield",
+                    "x": 73,
+                    "y": 40
+                },
+                {
+                    "name": "alves",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 90,
+                    "y": 13
+                },
+                {
+                    "name": "pique",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 93,
+                    "y": 24
+                },
+                {
+                    "name": "mascherano",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 95,
+                    "y": 36
+                },
+                {
+                    "name": "alba",
+                    "team": "team2",
+                    "role": "defender",
+                    "x": 91,
+                    "y": 45
+                },
+                {
+                    "name": "bravo",
+                    "team": "team2",
+                    "role": "goalkeeper",
+                    "x": 114,
+                    "y": 30
+                }
+            ]
+        }
+    ]
+}
