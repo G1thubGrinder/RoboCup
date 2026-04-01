@@ -1,6 +1,10 @@
 %make predicate changable
 :- dynamic player/7.
 :- dynamic ball/1.
+:- dynamic score/2.
+:- dynamic game_log/1.
+:- dynamic current_game/2.
+:- dynamic current_time/2.
 
 %----------------------------------------------------------------------
 % Set up
@@ -167,7 +171,7 @@ check_goal :-
 % Simulate single round
 %----------------------------------------------------------------------
 
-simulate_round :-
+simulate_round(GameNum, TimeNum) :-
     ball(position(BX,BY)),
     format('~nBall is now at (~w, ~w) | ', [BX, BY]),
     
@@ -181,9 +185,13 @@ simulate_round :-
         player(Name,_,_,_,_,_,_),
         ( kick_ball(Name) -> true ; true)
     ),
+
+    log_time_frame(GameNum, TimeNum),
+
     ( check_goal ->
-        true, restart_new_round;
-        simulate_round
+        end_game(GameNum), restart_new_round;
+        NextTime is TimeNum + 1,
+        simulate_round(GameNum, NextTime)
     ).
 
 %----------------------------------------------------------------------
@@ -191,8 +199,16 @@ simulate_round :-
 %----------------------------------------------------------------------
 
 round_simulation(RoundCount):-
+    source_file(round_simulation(_), ThisFile),
+    file_directory_name(ThisFile, Directory),
+    working_directory(_, Directory),
+    init_log,
     setup,
     round_simulation(RoundCount, RoundCount).
+
+round_simulation(0, _):-
+    export_json('game_log.json'),
+    !.
 
 round_simulation(RoundCount, TotalRoundCount):-
     RoundCount > 0,
@@ -200,6 +216,120 @@ round_simulation(RoundCount, TotalRoundCount):-
     writeln('============================'),
     format('      Round ~w: start!~n', [CurrentRound]),
     writeln('============================'),
+    begin_game(CurrentRound),
+    simulate_round(CurrentRound, 1),
     NewRoundCount is RoundCount - 1,
-    simulate_round,
     round_simulation(NewRoundCount, TotalRoundCount).
+
+%----------------------------------------------------------------------
+% Logging function
+%----------------------------------------------------------------------
+
+init_log :-
+    retractall(game_log(_)),
+    assertz(game_log([])).
+
+begin_game(GameNum) :-
+    retractall(current_game(_,_)),
+    assertz(current_game(GameNum, [])).
+
+log_time_frame(GameNum, TimeNum) :-
+    ball(position(BX, BY)),
+    % Collect all player snapshots inside that time frame
+    findall(
+        player_snap(Name, Team, Role, PX, PY),
+        player(Name, Team, Role, position(PX, PY), _, _, _),
+        PlayerSnaps
+    ),
+    TimeFrame = time_frame(TimeNum, ball(BX, BY), PlayerSnaps),
+    retract(current_game(GameNum, Times)),
+    append(Times, [TimeFrame], NewTimes),
+    assertz(current_game(GameNum, NewTimes)).
+
+end_game(GameNum) :-
+    current_game(GameNum, Times),
+    GameEntry = game_entry(GameNum, Times),
+    retract(game_log(Games)),
+    append(Games, [GameEntry], NewGames),
+    assertz(game_log(NewGames)).
+
+%----------------------------------------------------------------------
+% Logging function
+%----------------------------------------------------------------------
+
+%This part is trying to imitate JSON format and write to variable Stream with prolog write 
+
+export_json(FileName):-
+    game_log(Games),
+    open(FileName, write, Stream),
+
+    write(Stream, '{'),
+    nl(Stream),
+
+    %Field 
+    write(Stream, '  "field": {'),   nl(Stream),
+    write(Stream, '    "width": 120,'),  nl(Stream),
+    write(Stream, '    "height": 60'),   nl(Stream),
+    write(Stream, '  },'),  nl(Stream),
+
+    %Games array
+    write(Stream, '  "games": ['), nl(Stream),
+    length(Games, GLen),
+    write_games(Stream, Games, GLen, 1),
+    write(Stream, '  ]'),  nl(Stream),
+    write(Stream, '}'),    nl(Stream),
+    close(Stream),
+    format('~nGame log exported to ~w~n', [FileName]).
+
+write_games(_, [], _, _).
+write_games(Stream, [game_entry(GameNum, Times) | Tail], TotalGames, Idx):-
+    write(Stream, '    {'),  nl(Stream),
+    format(Stream, '      "game": ~w,~n', [GameNum]),
+    write(Stream,  '      "times": ['), nl(Stream),
+    length(Times, TLen),
+    write_times(Stream, Times, TLen, 1),
+    write(Stream, '      ]'),  nl(Stream),
+    ( Idx < TotalGames ->
+        write(Stream, '    },'), nl(Stream)
+    ;
+        write(Stream, '    }'),  nl(Stream)
+    ),
+    NextIdx is Idx + 1,
+    write_games(Stream, Tail, TotalGames, NextIdx).
+
+write_times(_, [], _, _).
+write_times(Stream, [time_frame(TimeNum, ball(BX, BY), Players)| Tail], TotalTimes, Idx) :-
+    write(Stream, '        {'), nl(Stream),
+    format(Stream, '          "time": ~w,~n', [TimeNum]),
+    write(Stream,  '          "ball": {'), nl(Stream),
+    format(Stream, '            "x": ~w,~n', [BX]),
+    format(Stream, '            "y": ~w~n',  [BY]),
+    write(Stream,  '          },'), nl(Stream),
+    write(Stream,  '          "players": ['), nl(Stream),
+    length(Players, PLen),
+    write_players(Stream, Players, PLen, 1),
+    write(Stream, '          ]'), nl(Stream),
+    ( Idx < TotalTimes ->
+        write(Stream, '        },'), nl(Stream)
+    ;
+        write(Stream, '        }'),  nl(Stream)
+    ),
+    NextIdx is Idx + 1,
+    write_times(Stream, Tail, TotalTimes, NextIdx).
+
+write_players(_, [], _, _).
+write_players(Stream, [player_snap(Name, Team, Role, PX, PY) | Tail], TotalPlayers, Idx) :-
+    write(Stream, '            {'), nl(Stream),
+    format(Stream, '              "name": "~w",~n', [Name]),
+    format(Stream, '              "team": "~w",~n', [Team]),
+    format(Stream, '              "role": "~w",~n', [Role]),
+    format(Stream, '              "x": ~w,~n',      [PX]),
+    format(Stream, '              "y": ~w~n',        [PY]),
+    ( Idx < TotalPlayers ->
+        write(Stream, '            },'), nl(Stream)
+    ;
+        write(Stream, '            }'),  nl(Stream)
+    ),
+    NextIdx is Idx + 1,
+    write_players(Stream, Tail, TotalPlayers, NextIdx).
+

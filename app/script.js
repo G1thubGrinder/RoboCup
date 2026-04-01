@@ -53,7 +53,7 @@ const tooltip = document.getElementById('tooltip');
 // ───────────────────────────────────────────
 async function loadLog() {
     try {
-    const res = await fetch('game_log.json');
+    const res = await fetch('../game_log.json');
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     rounds = data.rounds;
