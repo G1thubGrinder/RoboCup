@@ -43,10 +43,10 @@ restart_new_round :-
     assertz(ball(position(60, 30))),
 
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
-
+    
     % team1 — Real Madrid, 2-3-1 on left side
-    assertz(player(ronaldo,    team1, forward,    position(50, 30), 45, 10, 100)),
-    assertz(player(modric,     team1, midfield,   position(35, 15), 44, 8,  100)),
+    assertz(player(ronaldo,    team1, forward,    position(50, 30), 40, 10, 100)),
+    assertz(player(modric,     team1, midfield,   position(35, 15), 45, 8,  100)),
     assertz(player(casemiro,   team1, midfield,   position(35, 30), 38, 10, 100)),
     assertz(player(kroos,      team1, midfield,   position(35, 45), 42, 2,  100)),
     assertz(player(varane,     team1, defender,   position(15, 23), 46, 6,  100)),
@@ -54,7 +54,7 @@ restart_new_round :-
     assertz(player(navas,      team1, goalkeeper, position(1,  30), 75, 2,  100)),
 
     % team2 — Barcelona, 2-3-1 on right side
-    assertz(player(suarez,     team2, forward,    position(70, 30), 45, 10, 100)),
+    assertz(player(suarez,     team2, forward,    position(70, 30), 40, 10, 100)),
     assertz(player(iniesta,    team2, midfield,   position(85, 15), 44, 8,  100)),
     assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 7,  100)),
     assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 7,  100)),
