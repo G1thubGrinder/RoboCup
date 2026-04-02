@@ -42,14 +42,14 @@ restart_new_round :-
     retractall(ball(position(_,_))),
     retractall(player(_,_,_,_,_,_,_)),
     
-    assertz(ball(position(60, 0))),
+    assertz(ball(position(60, 4))),
 
     % work for niner to list the football player
     % player(Name,Team,Role,position(X1,Y1),Kickpower,Speed,Stamina)
-    assertz(player(niner, team1, forward, position(10,27), 40, 6, 100)),
-    assertz(player(peace, team1, forward, position(40,13), 20, 8, 100)),
-    assertz(player(p, team2, forward, position(82,15), 30, 5, 100)),
-    assertz(player(guy, team2, defender, position(112,22), 60, 4, 100)).
+    assertz(player(niner, team1, forward, position(10,27), 40, 2, 100)),
+    assertz(player(peace, team1, forward, position(40,13), 20, 2, 100)),
+    assertz(player(p, team2, forward, position(82,15), 30, 2, 100)),
+    assertz(player(guy, team2, defender, position(112,22), 60, 2, 100)).
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
 goal_position(team1, position(120, 30)).

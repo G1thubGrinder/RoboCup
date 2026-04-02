@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RoboCup Visualizer – Real Madrid vs Barcelona</title>
+  <title>RoboCup Visualizer - Real Madrid vs Barcelona</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css">
 </head>
@@ -15,7 +15,7 @@
     <div class="title">⚽ RoboCup <span>Visualizer</span></div>
     <div class="scoreboard">
       <div class="team-name team1-name">Real Madrid</div>
-      <div class="score" id="score">0 – 0</div>
+      <div class="score" id="score">0 - 0</div>
       <div class="team-name team2-name">Barcelona</div>
     </div>
   </header>
@@ -36,9 +36,12 @@
       <button class="btn primary" id="btn-play">▶ Play</button>
       <button class="btn" id="btn-fwd">Step ▶</button>
       <button class="btn" id="btn-reset">↺ Reset</button>
-      <div class="round-info">Round <b id="cur-round">—</b> / <b id="total-rounds">—</b></div>
+      <select class="btn" id="dropdown">
+        <option value="">Goal</option>
+      </select>
+      <div class="round-info">Time frame <b id="cur-round">1</b> / <b id="total-rounds">—</b></div>
     </div>
-    <input type="range" id="timeline" min="0" value="0" />
+    <input type="range" id="timeline" min="1" value="0" />
     <div class="speed-row">
       🐢 Speed
       <input type="range" id="speed" min="1" max="10" value="4" />
