@@ -28,7 +28,6 @@ let timelineIdx = 1;
 let playing = false;
 let animTimer = null;
 let goalBanner = { showing: false };
-let selectedTime = 1;
 
 // ───────────────────────────────────────────
 // Elements
@@ -74,7 +73,6 @@ async function loadLog() {
 }
 
 function init() {
-    console.log(games[0])
     timeline.max = games[0].times.length;
     timeline.value = 0;
     totalRoundsEl.textContent = games[0].times.length;
@@ -97,15 +95,6 @@ function getScoreResult() {
 // ───────────────────────────────────────────
 // Goal detection
 // ───────────────────────────────────────────
-function checkGoal(ball) {
-    if (ball.x >= 120 && ball.y >= 27 && ball.y <= 33) {
-        showGoal('⚽ GOAL!', '🏆 Real Madrid scores!', '#f0c040');
-        scoreEl.textContent = '1 - 0';
-    } else if (ball.x <= 0 && ball.y >= 27 && ball.y <= 33) {
-        showGoal('⚽ GOAL!', '🏆 Barcelona scores!', '#4a90d9');
-        scoreEl.textContent = '0 - 1';
-    }
-}
 
 function showGoal(text, scorer, color) {
     goalTextEl.textContent = text;
@@ -126,12 +115,13 @@ function hideGoal() {
 // ───────────────────────────────────────────
 function getInterval() {
     const spd = parseInt(speedSlider.value);
-    return Math.max(80, 1000 / spd);
+    console.log(spd)
+    return 800 / spd;
 }
 
 function startPlayback() {
     if (playing) return;
-    if (timelineIdx >= games.length - 1) {
+    if (timelineIdx >= games[parseInt(dropdown.value) - 1].times.length - 1) {
         timelineIdx = 0;
         hideGoal();
     }
@@ -140,8 +130,9 @@ function startPlayback() {
     btnPlay.classList.add('paused');
     function tick() {
         if (!playing) return;
-        if (timelineIdx < games.length - 1) {
-            drawRound(timelineIdx + 1);
+        if (timelineIdx <= games[parseInt(dropdown.value) - 1].times.length - 1) {
+            drawTimeFrame(timelineIdx + 1, parseInt(dropdown.value));
+            timelineIdx += 1;
             animTimer = setTimeout(tick, getInterval());
         } else {
             stopPlayback();
@@ -166,8 +157,6 @@ btnPlay.addEventListener('click', () => {
 
 const handleBtnBack = () => {
     if(timelineIdx <= 1) return;
-    team1Score.textContent = scoreSummary[parseInt(dropdown.value) - 1].team1;
-    team2Score.textContent = scoreSummary[parseInt(dropdown.value) - 1].team2;
     stopPlayback();
     hideGoal();
     timelineIdx -= 1;
@@ -182,13 +171,8 @@ btnBack.addEventListener('keydown', (event) => {
 
 const handleBtnFwd = () => {
     if(timelineIdx >= games[parseInt(dropdown.value) - 1].times.length) return;
-    if(timelineIdx == games[parseInt(dropdown.value) - 1].times.length - 1){
-        team1Score.textContent = scoreSummary[parseInt(dropdown.value)].team1;
-        team2Score.textContent = scoreSummary[parseInt(dropdown.value)].team2;
-    }
     stopPlayback();
     timelineIdx += 1;
-    console.log(timelineIdx);
     timeline.value = timelineIdx;
     drawTimeFrame(parseInt(timeline.value), parseInt(dropdown.value));
 }
@@ -201,20 +185,20 @@ btnFwd.addEventListener('keydown', (event) => {
 btnReset.addEventListener('click', () => {
     stopPlayback();
     hideGoal();
-    scoreEl.textContent = '0 - 0';
-    drawRound(0);
+    timeline.value = 1;
+    drawTimeFrame(1,parseInt(dropdown.value))
 });
 
 timeline.addEventListener('input', () => {
     stopPlayback();
     hideGoal();
-    drawTimeFrame(parseInt(timeline.value), selectedTime);
+    drawTimeFrame(parseInt(timeline.value), parseInt(dropdown.value));
     curRoundEl.innerText = timeline.value;
     timelineIdx = parseInt(timeline.value);
 });
 
 speedSlider.addEventListener('input', () => {
-    speedVal.textContent = speedSlider.value;
+    speedVal.textContent = speedSlider.value / 2;
 });
 
 dropdown.addEventListener('change', (event) => {
@@ -226,11 +210,7 @@ dropdown.addEventListener('change', (event) => {
     timeline.value = 0
     totalRoundsEl.textContent = games[selectedGame - 1].times.length;
     timelineIdx = 1;
-
-    //update score
-    team1Score.textContent = scoreSummary[selectedGame - 1].team1;
-    team2Score.textContent = scoreSummary[selectedGame - 1].team2;
-
+    stopPlayback();
     drawTimeFrame(1, selectedGame)
 })
 
@@ -446,8 +426,17 @@ function drawTimeFrame(timeIdx, gameIdx) {
     drawField();
     selectedTimeFrame.players.forEach(drawPlayer);
     drawBall(selectedTimeFrame.ball);
-
     curRoundEl.textContent = timeIdx;
+
+    //change score
+    if(timeIdx < game.times.length){
+        team1Score.textContent = scoreSummary[gameIdx - 1].team1;
+        team2Score.textContent = scoreSummary[gameIdx - 1].team2;
+    }
+    else{
+        team1Score.textContent = scoreSummary[gameIdx].team1;
+        team2Score.textContent = scoreSummary[gameIdx].team2;
+    }
 
     // if (gameIdx === games.length - 1) {
     //     checkGoal(game.ball);
