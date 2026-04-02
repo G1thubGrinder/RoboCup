@@ -2,6 +2,7 @@
 :- dynamic player/7.
 :- dynamic ball/1.
 :- dynamic score/2.
+:- dynamic ball_kicked/0.
 
 %----------------------------------------------------------------------
 % Set up
@@ -122,9 +123,9 @@ running_boundary(Name) :-
       (Role = defender, Team = team2, NewX < HalfW, BX >= HalfW) -> FinalX is HalfW ;
       FinalX is NewX ),
 
-    % CASE 3: forwards stay in attacking half — only if ball is NOT in restricted area
-    ( (Role = forward, Team = team1, FinalX < HalfW, BX >= HalfW) -> FinalX2 is HalfW ;
-      (Role = forward, Team = team2, FinalX > HalfW, BX =< HalfW) -> FinalX2 is HalfW ;
+    % CASE 3: forwards stay in attacking half — only if ball is NOT in their zone
+    ( (Role = forward, Team = team1, FinalX < HalfW, BX < HalfW) -> FinalX2 is HalfW ;
+      (Role = forward, Team = team2, FinalX > HalfW, BX > HalfW) -> FinalX2 is HalfW ;
       FinalX2 is FinalX ),
 
     % CASE 4: midfielders stay in middle band — only if ball is NOT in restricted area
@@ -191,6 +192,49 @@ kick_ball(Name):-
     assertz(ball(position(NewBX, NewBY))).
 
 %----------------------------------------------------------------------
+% Ball out of field
+%----------------------------------------------------------------------
+
+ball_out_of_field(team2) :-
+    ball(position(BX, _)),
+    BX > 120, !.
+
+ball_out_of_field(team1) :-
+    ball(position(BX, _)),
+    BX < 0, !.
+
+ball_out_of_field(Team) :-
+    ball(position(BX, BY)),
+    (BY < 0 ; BY > 60),
+    ( BX >= 60 -> Team = team2 ; Team = team1 ), !.
+
+%----------------------------------------------------------------------
+% Goal Kick
+%----------------------------------------------------------------------
+
+goal_kick_back(Team) :-
+    format('~n*** Ball out! ~w goal kicks ***~n', [Team]),
+    goal_position(Team, position(GoalX, _)),
+    ball(position(_, BY)),
+    field(size(_, MaxY)),
+    KickY is min(max(BY, 0), MaxY),
+    retractall(ball(position(_, _))),
+    assertz(ball(position(GoalX, KickY))),
+    CenterX is 60,
+    CenterY is 30,
+    XDiff is CenterX - GoalX,
+    YDiff is CenterY - KickY,
+    random(R1),
+    KickpowerFactor is (4 * ((R1 - 0.5)**3) + 1),
+    ActualGoalKickpower is 80 * KickpowerFactor,
+    calculate_x_y_distance(ActualGoalKickpower, XDiff, YDiff, XDis, YDis),
+    NewBX is GoalX + XDis,
+    NewBY is KickY + YDis,
+    format('Goalkeeper (~w) kicks from (~w,~w) to (~w,~w)~n', [Team, GoalX, KickY, NewBX, NewBY]),
+    retractall(ball(position(_, _))),
+    assertz(ball(position(NewBX, NewBY))).
+
+%----------------------------------------------------------------------
 % Check goal
 %----------------------------------------------------------------------
 
@@ -224,6 +268,11 @@ check_goal :-
 %----------------------------------------------------------------------
 
 simulate_round :-
+    simulate_round(200).
+simulate_round(0) :- !,
+    writeln('No goal scored this round (tick limit reached)').
+simulate_round(Ticks) :-
+    Ticks > 0,
     ball(position(BX,BY)),
     format('~nBall is now at (~w, ~w) | ', [BX, BY]),
 
@@ -232,14 +281,21 @@ simulate_round :-
         player(Name,_,_,_,_,_,_),
         ( move_towards_ball(Name), running_boundary(Name) )
     ),
-    % Then kick
+    % Only first eligible player kicks per tick
+    retractall(ball_kicked),
     forall(
         player(Name,_,_,_,_,_,_),
-        ( kick_ball(Name) -> true ; true)
+        ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
     ),
     ( check_goal ->
-        true, restart_new_round;
-        simulate_round
+        true, restart_new_round
+    ; ball_out_of_field(Team) ->
+        goal_kick_back(Team),
+        NextTick is Ticks - 1,
+        simulate_round(NextTick)
+    ;
+        NextTick is Ticks - 1,
+        simulate_round(NextTick)
     ).
 
 %----------------------------------------------------------------------
@@ -250,6 +306,12 @@ round_simulation(RoundCount):-
     setup,
     round_simulation(RoundCount, RoundCount).
 
+round_simulation(0, _) :- !,
+    score(S1, S2),
+    writeln('============================'),
+    writeln('======= FINAL SCORE ========'),
+    format('  team1 ~w - ~w team2~n', [S1, S2]),
+    writeln('============================').
 round_simulation(RoundCount, TotalRoundCount):-
     RoundCount > 0,
     CurrentRound is TotalRoundCount - RoundCount + 1,
