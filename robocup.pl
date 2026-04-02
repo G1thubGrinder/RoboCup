@@ -1,6 +1,8 @@
 %make predicate changable
 :- dynamic player/7.
 :- dynamic ball/1.
+:- dynamic score/2.
+:- dynamic ball_kicked/0.
 
 %----------------------------------------------------------------------
 % Set up
@@ -37,19 +39,32 @@ setup:-
 restart_new_round :-
     retractall(ball(position(_,_))),
     retractall(player(_,_,_,_,_,_,_)),
-    
-    assertz(ball(position(60, 0))),
 
-    % work for niner to list the football player
-    % player(Name,Team,Role,position(X1,Y1),Kickpower,Speed,Stamina)
-    assertz(player(niner, team1, forward, position(10,27), 40, 6, 100)),
-    assertz(player(peace, team1, forward, position(40,13), 20, 8, 100)),
-    assertz(player(p, team2, forward, position(82,15), 30, 5, 100)),
-    assertz(player(guy, team2, defender, position(112,22), 60, 4, 100)).
+    assertz(ball(position(60, 30))),
+
+    % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
+    
+    % team1 — Real Madrid, 2-3-1 on left side
+    assertz(player(ronaldo,    team1, forward,    position(50, 30), 40, 10, 100)),
+    assertz(player(modric,     team1, midfield,   position(35, 15), 45, 8,  100)),
+    assertz(player(casemiro,   team1, midfield,   position(35, 30), 38, 10, 100)),
+    assertz(player(kroos,      team1, midfield,   position(35, 45), 42, 2,  100)),
+    assertz(player(varane,     team1, defender,   position(15, 23), 46, 6,  100)),
+    assertz(player(ramos,      team1, defender,   position(15, 37), 48, 6,  100)),
+    assertz(player(navas,      team1, goalkeeper, position(1,  30), 75, 2,  100)),
+
+    % team2 — Barcelona, 2-3-1 on right side
+    assertz(player(suarez,     team2, forward,    position(70, 30), 40, 10, 100)),
+    assertz(player(iniesta,    team2, midfield,   position(85, 15), 44, 8,  100)),
+    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 7,  100)),
+    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 7,  100)),
+    assertz(player(pique,      team2, defender,   position(105, 23), 46, 6, 100)),
+    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 6, 100)),
+    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 75, 2, 100)).
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
 goal_position(team1, position(120, 30)).
-goal_position(team2, position(0, 30)).    
+goal_position(team2, position(0, 30)).
 
 %----------------------------------------------------------------------
 % Useful function
@@ -88,6 +103,48 @@ move_towards_ball(Name):-
     format(' ~w to (~w, ~w) |', [Name, NewX, NewY]).
 
 %----------------------------------------------------------------------
+% Running boundary — enforce zone constraints per role
+%----------------------------------------------------------------------
+
+running_boundary(Name) :-
+    field(size(FieldW, FieldH)),
+    HalfW   is FieldW // 2,
+    MidLow  is FieldW // 4,
+    MidHigh is (3 * FieldW) // 4,
+    player(Name, Team, Role, position(X, Y), Kickpower, Speed, Stamina),
+    ball(position(BX, _)),
+
+    % CASE 1: clamp to field boundaries (always enforced)
+    ( X < 0      -> NewX is 0      ; X > FieldW -> NewX is FieldW ; NewX is X ),
+    ( Y < 0      -> NewY is 0      ; Y > FieldH -> NewY is FieldH ; NewY is Y ),
+
+    % CASE 2: defenders stay in own half — only if ball is NOT in restricted area
+    ( (Role = defender, Team = team1, NewX > HalfW, BX =< HalfW) -> FinalX is HalfW ;
+      (Role = defender, Team = team2, NewX < HalfW, BX >= HalfW) -> FinalX is HalfW ;
+      FinalX is NewX ),
+
+    % CASE 3: forwards stay in attacking half — only if ball is NOT in their zone
+    ( (Role = forward, Team = team1, FinalX < HalfW, BX < HalfW) -> FinalX2 is HalfW ;
+      (Role = forward, Team = team2, FinalX > HalfW, BX > HalfW) -> FinalX2 is HalfW ;
+      FinalX2 is FinalX ),
+
+    % CASE 4: midfielders stay in middle band — only if ball is NOT in restricted area
+    ( (Role = midfield, FinalX2 > MidHigh, BX =< MidHigh) -> FinalX3 is MidHigh ;
+      (Role = midfield, FinalX2 < MidLow,  BX >= MidLow)  -> FinalX3 is MidLow  ;
+      FinalX3 is FinalX2 ),
+
+    % CASE 5: goalkeeper stays near own goal — only if ball is NOT in their area
+    ( (Role = goalkeeper, Team = team1, FinalX3 > 10,  BX > 10)  -> FinalX4 is 10  ;
+      (Role = goalkeeper, Team = team2, FinalX3 < 110, BX < 110) -> FinalX4 is 110 ;
+      FinalX4 is FinalX3 ),
+
+    % Only update if position actually changed
+    ( (FinalX4 =\= X ; NewY =\= Y) ->
+        retract(player(Name, Team, Role, position(X, Y), Kickpower, Speed, Stamina)),
+        assertz(player(Name, Team, Role, position(FinalX4, NewY), Kickpower, Speed, Stamina))
+    ; true ).
+
+%----------------------------------------------------------------------
 % Player attempt to kicking the ball
 %----------------------------------------------------------------------
 
@@ -124,7 +181,7 @@ kick_ball(Name):-
     NewBX is BX + round(RandomizedXDis),
     NewBY is BY + round(RandomizedYDis),
     format(
-        '~nThe ball is kicked from (~w, ~w) to (~w, ~w) by ~w ~n', 
+        '~nThe ball is kicked from (~w, ~w) to (~w, ~w) by ~w ~n',
         [BX, BY, NewBX, NewBY, Name]
     ),
     format(
@@ -132,6 +189,53 @@ kick_ball(Name):-
         [KickpowerFactor, Angle]
     ),
     retract(ball(position(BX, BY))),
+    assertz(ball(position(NewBX, NewBY))).
+
+%----------------------------------------------------------------------
+% Ball out of field
+%----------------------------------------------------------------------
+
+ball_out_of_field(team2) :-
+    ball(position(BX, _)),
+    BX > 120, !.
+
+ball_out_of_field(team1) :-
+    ball(position(BX, _)),
+    BX < 0, !.
+
+ball_out_of_field(Team) :-
+    ball(position(BX, BY)),
+    (BY < 0 ; BY > 60),
+    ( BX >= 60 -> Team = team2 ; Team = team1 ), !.
+
+%----------------------------------------------------------------------
+% Goal Kick
+%----------------------------------------------------------------------
+
+goal_kick_back(Team) :-
+    format('~n*** Ball out! ~w goal kicks ***~n', [Team]),
+
+    %Decide kick position
+    goal_position(Team, position(GoalX, _)),
+    ball(position(_, BY)),
+    field(size(_, MaxY)),
+    KickY is min(max(BY, 0), MaxY),
+    retractall(ball(position(_, _))),
+    assertz(ball(position(GoalX, KickY))),
+
+    %Kick toward center
+    CenterX is 60,
+    CenterY is 30,
+    XDiff is CenterX - GoalX,
+    YDiff is CenterY - KickY,
+    random(R1),
+    KickpowerFactor is (4 * ((R1 - 0.5)**3) + 1),
+    ActualGoalKickpower is 80 * KickpowerFactor,
+    calculate_x_y_distance(ActualGoalKickpower, XDiff, YDiff, XDis, YDis),
+    NewBX is GoalX + XDis,
+    NewBY is KickY + YDis,
+    format('Goalkeeper (~w) kicks from (~w,~w) to (~w,~w)~n', [Team, GoalX, KickY, NewBX, NewBY]),
+    retractall(ball(position(_, _))),
     assertz(ball(position(NewBX, NewBY))).
 
 %----------------------------------------------------------------------
@@ -168,22 +272,34 @@ check_goal :-
 %----------------------------------------------------------------------
 
 simulate_round :-
+    simulate_round(100).
+simulate_round(0) :- !,
+    writeln('No goal scored this round (tick limit reached)').
+simulate_round(Ticks) :-
+    Ticks > 0,
     ball(position(BX,BY)),
     format('~nBall is now at (~w, ~w) | ', [BX, BY]),
-    
-    % Every players move first
+
+    % Every players move first, then enforce boundary
     forall(
         player(Name,_,_,_,_,_,_),
-        move_towards_ball(Name)
+        ( move_towards_ball(Name), running_boundary(Name) )
     ),
-    % Then kick
+    % Only first eligible player kicks per tick
+    retractall(ball_kicked),
     forall(
         player(Name,_,_,_,_,_,_),
-        ( kick_ball(Name) -> true ; true)
+        ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
     ),
     ( check_goal ->
-        true, restart_new_round;
-        simulate_round
+        true   % round ends here, return to round_simulation
+    ; ball_out_of_field(Team) ->
+        goal_kick_back(Team),
+        NextTick is Ticks - 1,
+        simulate_round(NextTick)
+    ;
+        NextTick is Ticks - 1,
+        simulate_round(NextTick)
     ).
 
 %----------------------------------------------------------------------
@@ -194,6 +310,12 @@ round_simulation(RoundCount):-
     setup,
     round_simulation(RoundCount, RoundCount).
 
+round_simulation(0, _) :- !,
+    score(S1, S2),
+    writeln('============================'),
+    writeln('======= FINAL SCORE ========'),
+    format('     team1 ~w - ~w team2~n', [S1, S2]),
+    writeln('============================').
 round_simulation(RoundCount, TotalRoundCount):-
     RoundCount > 0,
     CurrentRound is TotalRoundCount - RoundCount + 1,
@@ -202,4 +324,5 @@ round_simulation(RoundCount, TotalRoundCount):-
     writeln('============================'),
     NewRoundCount is RoundCount - 1,
     simulate_round,
+    restart_new_round,   % reset players and ball between rounds
     round_simulation(NewRoundCount, TotalRoundCount).
