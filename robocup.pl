@@ -2,6 +2,9 @@
 :- dynamic player/7.
 :- dynamic ball/1.
 :- dynamic score/2.
+:- dynamic game_log/1.
+:- dynamic current_game/2.
+:- dynamic current_time/2.
 :- dynamic ball_kicked/0.
 
 %----------------------------------------------------------------------
@@ -45,22 +48,22 @@ restart_new_round :-
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
     
     % team1 — Real Madrid, 2-3-1 on left side
-    assertz(player(ronaldo,    team1, forward,    position(50, 30), 40, 10, 100)),
-    assertz(player(modric,     team1, midfield,   position(35, 15), 45, 8,  100)),
-    assertz(player(casemiro,   team1, midfield,   position(35, 30), 38, 10, 100)),
-    assertz(player(kroos,      team1, midfield,   position(35, 45), 42, 2,  100)),
-    assertz(player(varane,     team1, defender,   position(15, 23), 46, 6,  100)),
-    assertz(player(ramos,      team1, defender,   position(15, 37), 48, 6,  100)),
-    assertz(player(navas,      team1, goalkeeper, position(1,  30), 75, 2,  100)),
+    assertz(player(ronaldo,    team1, forward,    position(50, 30), 40, 3, 100)),
+    assertz(player(modric,     team1, midfield,   position(35, 15), 32, 2,  100)),
+    assertz(player(casemiro,   team1, midfield,   position(35, 30), 35, 2, 100)),
+    assertz(player(kroos,      team1, midfield,   position(35, 45), 33, 2,  100)),
+    assertz(player(varane,     team1, defender,   position(15, 23), 40, 1,  100)),
+    assertz(player(ramos,      team1, defender,   position(15, 37), 40, 1,  100)),
+    assertz(player(navas,      team1, goalkeeper, position(1,  30), 67, 1,  100)),
 
     % team2 — Barcelona, 2-3-1 on right side
-    assertz(player(suarez,     team2, forward,    position(70, 30), 40, 10, 100)),
-    assertz(player(iniesta,    team2, midfield,   position(85, 15), 44, 8,  100)),
-    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 7,  100)),
-    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 7,  100)),
-    assertz(player(pique,      team2, defender,   position(105, 23), 46, 6, 100)),
-    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 6, 100)),
-    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 75, 2, 100)).
+    assertz(player(suarez,     team2, forward,    position(70, 30), 30, 3, 100)),
+    assertz(player(iniesta,    team2, midfield,   position(85, 15), 32, 2,  100)),
+    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 2,  100)),
+    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 2,  100)),
+    assertz(player(pique,      team2, defender,   position(105, 23), 46, 1, 100)),
+    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 1, 100)),
+    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 65, 1, 100)).
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
 goal_position(team1, position(120, 30)).
@@ -272,10 +275,10 @@ check_goal :-
 %----------------------------------------------------------------------
 
 simulate_round :-
-    simulate_round(100).
-simulate_round(0) :- !,
+    simulate_round(_, 300).
+simulate_round(_, 0) :- !,
     writeln('No goal scored this round (tick limit reached)').
-simulate_round(Ticks) :-
+simulate_round(GameNum, Ticks) :-
     Ticks > 0,
     ball(position(BX,BY)),
     format('~nBall is now at (~w, ~w) | ', [BX, BY]),
@@ -291,15 +294,18 @@ simulate_round(Ticks) :-
         player(Name,_,_,_,_,_,_),
         ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
     ),
+
+    log_time_frame(GameNum, Ticks),
+
     ( check_goal ->
         true   % round ends here, return to round_simulation
     ; ball_out_of_field(Team) ->
         goal_kick_back(Team),
         NextTick is Ticks - 1,
-        simulate_round(NextTick)
+        simulate_round(GameNum, NextTick)
     ;
         NextTick is Ticks - 1,
-        simulate_round(NextTick)
+        simulate_round(GameNum, NextTick)
     ).
 
 %----------------------------------------------------------------------
@@ -307,22 +313,157 @@ simulate_round(Ticks) :-
 %----------------------------------------------------------------------
 
 round_simulation(RoundCount):-
+    source_file(round_simulation(_), ThisFile),
+    file_directory_name(ThisFile, Directory),
+    working_directory(_, Directory),
+    init_log,
     setup,
     round_simulation(RoundCount, RoundCount).
 
 round_simulation(0, _) :- !,
     score(S1, S2),
+    export_json('game_log.json'),
     writeln('============================'),
     writeln('======= FINAL SCORE ========'),
     format('     team1 ~w - ~w team2~n', [S1, S2]),
     writeln('============================').
+
 round_simulation(RoundCount, TotalRoundCount):-
     RoundCount > 0,
     CurrentRound is TotalRoundCount - RoundCount + 1,
     writeln('============================'),
     format('      Round ~w: start!~n', [CurrentRound]),
     writeln('============================'),
+    begin_game(CurrentRound),
+    simulate_round(CurrentRound, 200),
+    end_game(CurrentRound),
     NewRoundCount is RoundCount - 1,
-    simulate_round,
     restart_new_round,   % reset players and ball between rounds
     round_simulation(NewRoundCount, TotalRoundCount).
+
+%----------------------------------------------------------------------
+% Logging function
+%----------------------------------------------------------------------
+
+init_log :-
+    retractall(game_log(_)),
+    assertz(game_log([])).
+
+begin_game(GameNum) :-
+    retractall(current_game(_,_)),
+    assertz(current_game(GameNum, [])).
+
+log_time_frame(GameNum, TimeNum) :-
+    ball(position(BX, BY)),
+    % Collect all player snapshots inside that time frame
+    findall(
+        player_snap(Name, Team, Role, PX, PY),
+        player(Name, Team, Role, position(PX, PY), _, _, _),
+        PlayerSnaps
+    ),
+    TimeFrame = time_frame(TimeNum, ball(BX, BY), PlayerSnaps),
+    retract(current_game(GameNum, Times)),
+    append(Times, [TimeFrame], NewTimes),
+    assertz(current_game(GameNum, NewTimes)).
+
+end_game(GameNum) :-
+    current_game(GameNum, Times),
+    score(S1, S2),
+    GameEntry = game_entry(GameNum, S1, S2, Times),
+    retract(game_log(Games)),
+    append(Games, [GameEntry], NewGames),
+    assertz(game_log(NewGames)).
+
+count_goals(Times, Team1, Team2) :-
+    count_goals(Times, 0, 0, Team1, Team2).
+
+count_goals([], T1, T2, T1, T2).
+count_goals([time_entry(_, goal, team1) | Rest], T1, T2, R1, R2) :-
+    T1Next is T1 + 1,
+    count_goals(Rest, T1Next, T2, R1, R2).
+count_goals([time_entry(_, goal, team2) | Rest], T1, T2, R1, R2) :-
+    T2Next is T2 + 1,
+    count_goals(Rest, T1, T2Next, R1, R2).
+count_goals([_ | Rest], T1, T2, R1, R2) :-
+    count_goals(Rest, T1, T2, R1, R2).
+
+%----------------------------------------------------------------------
+% Logging function
+%----------------------------------------------------------------------
+
+%This part is trying to imitate JSON format and write to variable Stream with prolog write 
+
+export_json(FileName):-
+    game_log(Games),
+    open(FileName, write, Stream),
+
+    write(Stream, '{'),
+    nl(Stream),
+
+    %Field 
+    write(Stream, '  "field": {'),   nl(Stream),
+    write(Stream, '    "width": 120,'),  nl(Stream),
+    write(Stream, '    "height": 60'),   nl(Stream),
+    write(Stream, '  },'),  nl(Stream),
+
+    %Games array
+    write(Stream, '  "games": ['), nl(Stream),
+    length(Games, GLen),
+    write_games(Stream, Games, GLen, 1),
+    write(Stream, '  ]'),  nl(Stream),
+    write(Stream, '}'),    nl(Stream),
+    close(Stream),
+    format('~nGame log exported to ~w~n', [FileName]).
+
+write_games(_, [], _, _).
+write_games(Stream, [game_entry(GameNum, S1, S2, Times) | Tail], TotalGames, Idx):-
+    write(Stream, '    {'),  nl(Stream),
+    format(Stream, '      "game": ~w,~n', [GameNum]),
+    format(Stream, '      "score": {~n        "team1": ~w,~n        "team2": ~w~n      },~n', [S1, S2]),
+    write(Stream,  '      "times": ['), nl(Stream),
+    length(Times, TLen),
+    write_times(Stream, Times, TLen, 1),
+    write(Stream, '      ]'),  nl(Stream),
+    ( Idx < TotalGames ->
+        write(Stream, '    },'), nl(Stream)
+    ;
+        write(Stream, '    }'),  nl(Stream)
+    ),
+    NextIdx is Idx + 1,
+    write_games(Stream, Tail, TotalGames, NextIdx).
+
+write_times(_, [], _, _).
+write_times(Stream, [time_frame(TimeNum, ball(BX, BY), Players)| Tail], TotalTimes, Idx) :-
+    write(Stream, '        {'), nl(Stream),
+    format(Stream, '          "time": ~w,~n', [TimeNum]),
+    write(Stream,  '          "ball": {'), nl(Stream),
+    format(Stream, '            "x": ~w,~n', [BX]),
+    format(Stream, '            "y": ~w~n',  [BY]),
+    write(Stream,  '          },'), nl(Stream),
+    write(Stream,  '          "players": ['), nl(Stream),
+    length(Players, PLen),
+    write_players(Stream, Players, PLen, 1),
+    write(Stream, '          ]'), nl(Stream),
+    ( Idx < TotalTimes ->
+        write(Stream, '        },'), nl(Stream)
+    ;
+        write(Stream, '        }'),  nl(Stream)
+    ),
+    NextIdx is Idx + 1,
+    write_times(Stream, Tail, TotalTimes, NextIdx).
+
+write_players(_, [], _, _).
+write_players(Stream, [player_snap(Name, Team, Role, PX, PY) | Tail], TotalPlayers, Idx) :-
+    write(Stream, '            {'), nl(Stream),
+    format(Stream, '              "name": "~w",~n', [Name]),
+    format(Stream, '              "team": "~w",~n', [Team]),
+    format(Stream, '              "role": "~w",~n', [Role]),
+    format(Stream, '              "x": ~w,~n',      [PX]),
+    format(Stream, '              "y": ~w~n',        [PY]),
+    ( Idx < TotalPlayers ->
+        write(Stream, '            },'), nl(Stream)
+    ;
+        write(Stream, '            }'),  nl(Stream)
+    ),
+    NextIdx is Idx + 1,
+    write_players(Stream, Tail, TotalPlayers, NextIdx).
