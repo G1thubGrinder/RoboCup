@@ -288,7 +288,7 @@ simulate_round(Ticks) :-
         ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
     ),
     ( check_goal ->
-        true, restart_new_round
+        true   % round ends here, return to round_simulation
     ; ball_out_of_field(Team) ->
         goal_kick_back(Team),
         NextTick is Ticks - 1,
@@ -320,4 +320,5 @@ round_simulation(RoundCount, TotalRoundCount):-
     writeln('============================'),
     NewRoundCount is RoundCount - 1,
     simulate_round,
+    restart_new_round,   % reset players and ball between rounds
     round_simulation(NewRoundCount, TotalRoundCount).
