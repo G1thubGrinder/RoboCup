@@ -48,22 +48,22 @@ restart_new_round :-
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
     
     % team1 — Real Madrid, 2-3-1 on left side
-    assertz(player(ronaldo,    team1, forward,    position(50, 30), 40, 10, 100)),
-    assertz(player(modric,     team1, midfield,   position(35, 15), 45, 8,  100)),
-    assertz(player(casemiro,   team1, midfield,   position(35, 30), 38, 10, 100)),
-    assertz(player(kroos,      team1, midfield,   position(35, 45), 42, 2,  100)),
-    assertz(player(varane,     team1, defender,   position(15, 23), 46, 6,  100)),
-    assertz(player(ramos,      team1, defender,   position(15, 37), 48, 6,  100)),
-    assertz(player(navas,      team1, goalkeeper, position(1,  30), 75, 2,  100)),
+    assertz(player(ronaldo,    team1, forward,    position(50, 30), 40, 3, 100)),
+    assertz(player(modric,     team1, midfield,   position(35, 15), 32, 2,  100)),
+    assertz(player(casemiro,   team1, midfield,   position(35, 30), 35, 2, 100)),
+    assertz(player(kroos,      team1, midfield,   position(35, 45), 33, 2,  100)),
+    assertz(player(varane,     team1, defender,   position(15, 23), 40, 1,  100)),
+    assertz(player(ramos,      team1, defender,   position(15, 37), 40, 1,  100)),
+    assertz(player(navas,      team1, goalkeeper, position(1,  30), 67, 1,  100)),
 
     % team2 — Barcelona, 2-3-1 on right side
-    assertz(player(suarez,     team2, forward,    position(70, 30), 40, 10, 100)),
-    assertz(player(iniesta,    team2, midfield,   position(85, 15), 44, 8,  100)),
-    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 7,  100)),
-    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 7,  100)),
-    assertz(player(pique,      team2, defender,   position(105, 23), 46, 6, 100)),
-    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 6, 100)),
-    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 75, 2, 100)).
+    assertz(player(suarez,     team2, forward,    position(70, 30), 30, 3, 100)),
+    assertz(player(iniesta,    team2, midfield,   position(85, 15), 32, 2,  100)),
+    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 2,  100)),
+    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 2,  100)),
+    assertz(player(pique,      team2, defender,   position(105, 23), 46, 1, 100)),
+    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 1, 100)),
+    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 65, 1, 100)).
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
 goal_position(team1, position(120, 30)).
@@ -275,10 +275,10 @@ check_goal :-
 %----------------------------------------------------------------------
 
 simulate_round :-
-    simulate_round(100).
-simulate_round(0) :- !,
+    simulate_round(_, 300).
+simulate_round(_, 0) :- !,
     writeln('No goal scored this round (tick limit reached)').
-simulate_round(Ticks) :-
+simulate_round(GameNum, Ticks) :-
     Ticks > 0,
     ball(position(BX,BY)),
     format('~nBall is now at (~w, ~w) | ', [BX, BY]),
@@ -295,17 +295,17 @@ simulate_round(Ticks) :-
         ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
     ),
 
-    log_time_frame(GameNum, TimeNum),
+    log_time_frame(GameNum, Ticks),
 
     ( check_goal ->
         true   % round ends here, return to round_simulation
     ; ball_out_of_field(Team) ->
         goal_kick_back(Team),
         NextTick is Ticks - 1,
-        simulate_round(NextTick)
+        simulate_round(GameNum, NextTick)
     ;
         NextTick is Ticks - 1,
-        simulate_round(NextTick)
+        simulate_round(GameNum, NextTick)
     ).
 
 %----------------------------------------------------------------------
@@ -327,6 +327,7 @@ round_simulation(0, _) :- !,
     writeln('======= FINAL SCORE ========'),
     format('     team1 ~w - ~w team2~n', [S1, S2]),
     writeln('============================').
+
 round_simulation(RoundCount, TotalRoundCount):-
     RoundCount > 0,
     CurrentRound is TotalRoundCount - RoundCount + 1,
@@ -334,9 +335,9 @@ round_simulation(RoundCount, TotalRoundCount):-
     format('      Round ~w: start!~n', [CurrentRound]),
     writeln('============================'),
     begin_game(CurrentRound),
-    simulate_round(CurrentRound, 1),
+    simulate_round(CurrentRound, 200),
+    end_game(CurrentRound),
     NewRoundCount is RoundCount - 1,
-    simulate_round,
     restart_new_round,   % reset players and ball between rounds
     round_simulation(NewRoundCount, TotalRoundCount).
 
@@ -367,10 +368,24 @@ log_time_frame(GameNum, TimeNum) :-
 
 end_game(GameNum) :-
     current_game(GameNum, Times),
-    GameEntry = game_entry(GameNum, Times),
+    score(S1, S2),
+    GameEntry = game_entry(GameNum, S1, S2, Times),
     retract(game_log(Games)),
     append(Games, [GameEntry], NewGames),
     assertz(game_log(NewGames)).
+
+count_goals(Times, Team1, Team2) :-
+    count_goals(Times, 0, 0, Team1, Team2).
+
+count_goals([], T1, T2, T1, T2).
+count_goals([time_entry(_, goal, team1) | Rest], T1, T2, R1, R2) :-
+    T1Next is T1 + 1,
+    count_goals(Rest, T1Next, T2, R1, R2).
+count_goals([time_entry(_, goal, team2) | Rest], T1, T2, R1, R2) :-
+    T2Next is T2 + 1,
+    count_goals(Rest, T1, T2Next, R1, R2).
+count_goals([_ | Rest], T1, T2, R1, R2) :-
+    count_goals(Rest, T1, T2, R1, R2).
 
 %----------------------------------------------------------------------
 % Logging function
@@ -401,9 +416,10 @@ export_json(FileName):-
     format('~nGame log exported to ~w~n', [FileName]).
 
 write_games(_, [], _, _).
-write_games(Stream, [game_entry(GameNum, Times) | Tail], TotalGames, Idx):-
+write_games(Stream, [game_entry(GameNum, S1, S2, Times) | Tail], TotalGames, Idx):-
     write(Stream, '    {'),  nl(Stream),
     format(Stream, '      "game": ~w,~n', [GameNum]),
+    format(Stream, '      "score": {~n        "team1": ~w,~n        "team2": ~w~n      },~n', [S1, S2]),
     write(Stream,  '      "times": ['), nl(Stream),
     length(Times, TLen),
     write_times(Stream, Times, TLen, 1),
