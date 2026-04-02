@@ -107,34 +107,34 @@ move_towards_ball(Name):-
 
 running_boundary(Name) :-
     field(size(FieldW, FieldH)),
-    HalfW is FieldW // 2,
+    HalfW   is FieldW // 2,
+    MidLow  is FieldW // 4,
+    MidHigh is (3 * FieldW) // 4,
     player(Name, Team, Role, position(X, Y), Kickpower, Speed, Stamina),
+    ball(position(BX, _)),
 
-    % CASE 1: clamp to field boundaries
+    % CASE 1: clamp to field boundaries (always enforced)
     ( X < 0      -> NewX is 0      ; X > FieldW -> NewX is FieldW ; NewX is X ),
     ( Y < 0      -> NewY is 0      ; Y > FieldH -> NewY is FieldH ; NewY is Y ),
 
-    MidLow  is FieldW // 4,
-    MidHigh is (3 * FieldW) // 4,
-
-    % CASE 2: defenders stay in own half
-    ( (Role = defender, Team = team1, NewX > HalfW) -> FinalX is HalfW ;
-      (Role = defender, Team = team2, NewX < HalfW) -> FinalX is HalfW ;
+    % CASE 2: defenders stay in own half — only if ball is NOT in restricted area
+    ( (Role = defender, Team = team1, NewX > HalfW, BX =< HalfW) -> FinalX is HalfW ;
+      (Role = defender, Team = team2, NewX < HalfW, BX >= HalfW) -> FinalX is HalfW ;
       FinalX is NewX ),
 
-    % CASE 3: forwards stay in attacking half
-    ( (Role = forward, Team = team1, FinalX < HalfW) -> FinalX2 is HalfW ;
-      (Role = forward, Team = team2, FinalX > HalfW) -> FinalX2 is HalfW ;
+    % CASE 3: forwards stay in attacking half — only if ball is NOT in restricted area
+    ( (Role = forward, Team = team1, FinalX < HalfW, BX >= HalfW) -> FinalX2 is HalfW ;
+      (Role = forward, Team = team2, FinalX > HalfW, BX =< HalfW) -> FinalX2 is HalfW ;
       FinalX2 is FinalX ),
 
-    % CASE 4: midfielders stay in middle band [MidLow, MidHigh]
-    ( (Role = midfield, FinalX2 > MidHigh) -> FinalX3 is MidHigh ;
-      (Role = midfield, FinalX2 < MidLow)  -> FinalX3 is MidLow  ;
+    % CASE 4: midfielders stay in middle band — only if ball is NOT in restricted area
+    ( (Role = midfield, FinalX2 > MidHigh, BX =< MidHigh) -> FinalX3 is MidHigh ;
+      (Role = midfield, FinalX2 < MidLow,  BX >= MidLow)  -> FinalX3 is MidLow  ;
       FinalX3 is FinalX2 ),
 
-    % CASE 5: goalkeeper stays near own goal line
-    ( (Role = goalkeeper, Team = team1, FinalX3 > 10) -> FinalX4 is 10 ;
-      (Role = goalkeeper, Team = team2, FinalX3 < 110) -> FinalX4 is 110 ;
+    % CASE 5: goalkeeper stays near own goal — only if ball is NOT in their area
+    ( (Role = goalkeeper, Team = team1, FinalX3 > 10,  BX > 10)  -> FinalX4 is 10  ;
+      (Role = goalkeeper, Team = team2, FinalX3 < 110, BX < 110) -> FinalX4 is 110 ;
       FinalX4 is FinalX3 ),
 
     % Only update if position actually changed
