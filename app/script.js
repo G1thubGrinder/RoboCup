@@ -23,7 +23,7 @@ const ROLE_SHAPE = {
 // State
 // ───────────────────────────────────────────
 let games = [];
-let currentIdx = 0;
+let timelineIdx = 1;
 let playing = false;
 let animTimer = null;
 let goalBanner = { showing: false };
@@ -72,7 +72,6 @@ async function loadLog() {
 
 function init() {
     timeline.max = games[0].times.length;
-    console.log(games[0].times)
     timeline.value = 0;
     totalRoundsEl.textContent = games[0].times.length;
     for(let i = 1; i <= games.length; ++i){
@@ -90,10 +89,10 @@ function init() {
 function checkGoal(ball) {
     if (ball.x >= 120 && ball.y >= 27 && ball.y <= 33) {
         showGoal('⚽ GOAL!', '🏆 Real Madrid scores!', '#f0c040');
-        scoreEl.textContent = '1 – 0';
+        scoreEl.textContent = '1 - 0';
     } else if (ball.x <= 0 && ball.y >= 27 && ball.y <= 33) {
         showGoal('⚽ GOAL!', '🏆 Barcelona scores!', '#4a90d9');
-        scoreEl.textContent = '0 – 1';
+        scoreEl.textContent = '0 - 1';
     }
 }
 
@@ -121,8 +120,8 @@ function getInterval() {
 
 function startPlayback() {
     if (playing) return;
-    if (currentIdx >= games.length - 1) {
-        currentIdx = 0;
+    if (timelineIdx >= games.length - 1) {
+        timelineIdx = 0;
         hideGoal();
     }
     playing = true;
@@ -130,8 +129,8 @@ function startPlayback() {
     btnPlay.classList.add('paused');
     function tick() {
         if (!playing) return;
-        if (currentIdx < games.length - 1) {
-            drawRound(currentIdx + 1);
+        if (timelineIdx < games.length - 1) {
+            drawRound(timelineIdx + 1);
             animTimer = setTimeout(tick, getInterval());
         } else {
             stopPlayback();
@@ -155,15 +154,23 @@ btnPlay.addEventListener('click', () => {
 });
 
 btnBack.addEventListener('click', () => {
+    if(timelineIdx <= 1) return;
     stopPlayback();
     hideGoal();
-    if (currentIdx > 0) drawRound(currentIdx - 1);
+    timelineIdx -= 1;
+    timeline.value = timelineIdx;
+    drawTimeFrame(parseInt(timeline.value), parseInt(dropdown.value));
 });
 
 btnFwd.addEventListener('click', () => {
+    if(timelineIdx >= games[parseInt(dropdown.value) - 1].length - 1){
+        checkGoal(games[parseInt(dropdown.value)].times.ball);
+        return;
+    }
     stopPlayback();
-    if (currentIdx < games.length - 1) drawRound(currentIdx + 1);
-    else checkGoal(games[currentIdx].ball);
+    timelineIdx += 1;
+    timeline.value = timelineIdx;
+    drawTimeFrame(parseInt(timeline.value), parseInt(dropdown.value));
 });
 
 btnReset.addEventListener('click', () => {
@@ -177,7 +184,8 @@ timeline.addEventListener('input', () => {
     stopPlayback();
     hideGoal();
     drawTimeFrame(parseInt(timeline.value), selectedTime);
-    curRoundEl.innerText = timeline.value
+    curRoundEl.innerText = timeline.value;
+    currentIdx = timeline.value;
 });
 
 speedSlider.addEventListener('input', () => {
@@ -187,9 +195,11 @@ speedSlider.addEventListener('input', () => {
 dropdown.addEventListener('change', (event) => {
     let select = event.target;
     selectedGame = parseInt(select.value);
+    console.log(selectedGame)
     timeline.max = games[selectedGame - 1].times.length;
     timeline.value = 0
     totalRoundsEl.textContent = games[selectedGame - 1].times.length;
+    timelineIdx = 1;
     drawTimeFrame(1, selectedGame)
 })
 
@@ -425,17 +435,17 @@ function drawBall(ball) {
 // }
 
 function drawTimeFrame(timeIdx, gameIdx) {
-    console.log(timeIdx, gameIdx);
     if (!games.length) return;
-    const game = games[gameIdx];
+    const game = games[gameIdx - 1];
+    console.log(game)
     const selectedTimeFrame = game.times[timeIdx - 1];
-
+    console.log(selectedTimeFrame)
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
     drawField();
     selectedTimeFrame.players.forEach(drawPlayer);
     drawBall(selectedTimeFrame.ball);
 
-    curRoundEl.textContent = gameIdx;
+    curRoundEl.textContent = timeIdx;
 
     // if (gameIdx === games.length - 1) {
     //     checkGoal(game.ball);
