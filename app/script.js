@@ -22,11 +22,12 @@ const ROLE_SHAPE = {
 // ───────────────────────────────────────────
 // State
 // ───────────────────────────────────────────
-let rounds = [];
+let games = [];
 let currentIdx = 0;
 let playing = false;
 let animTimer = null;
 let goalBanner = { showing: false };
+let selectedTime = 1;
 
 // ───────────────────────────────────────────
 // Elements
@@ -37,6 +38,7 @@ const btnPlay = document.getElementById('btn-play');
 const btnBack = document.getElementById('btn-back');
 const btnFwd = document.getElementById('btn-fwd');
 const btnReset = document.getElementById('btn-reset');
+const dropdown = document.getElementById('dropdown');
 const timeline = document.getElementById('timeline');
 const speedSlider = document.getElementById('speed');
 const speedVal = document.getElementById('speed-val');
@@ -53,28 +55,178 @@ const tooltip = document.getElementById('tooltip');
 // ───────────────────────────────────────────
 async function loadLog() {
     try {
-    const res = await fetch('../game_log.json');
-    if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    rounds = data.rounds;
-    init();
+        const res = await fetch('../game_log.json');
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        games = data.games;
+        init();
     } catch (e) {
-    document.getElementById('field-wrapper').innerHTML =
+        document.getElementById('field-wrapper').innerHTML =
         `<div class="loading">
-    ⚠️ Could not load <code>game_log.json</code>.<br><br>
-    Run the simulation first:<br>
-    <code>swipl -g start_one_round -t halt robocup.pl</code><br><br>
-    Then serve via: <code>python3 -m http.server 8080</code>
-    </div>`;
+        ⚠️ Could not load <code>game_log.json</code>.<br><br>
+        The error is ${e}
+        </div>`;
+        console.log(e);
     }
 }
 
 function init() {
-    timeline.max = rounds.length - 1;
+    timeline.max = games[0].times.length;
+    console.log(games[0].times)
     timeline.value = 0;
-    totalRoundsEl.textContent = rounds.length;
-    drawRound(0);
+    totalRoundsEl.textContent = games[0].times.length;
+    for(let i = 1; i <= games.length; ++i){
+        let option = document.createElement("option");
+        option.value = i;
+        option.text = i;
+        dropdown.appendChild(option)
+    }
+    drawTimeFrame(1,1);
 }
+
+// ───────────────────────────────────────────
+// Goal detection
+// ───────────────────────────────────────────
+function checkGoal(ball) {
+    if (ball.x >= 120 && ball.y >= 27 && ball.y <= 33) {
+        showGoal('⚽ GOAL!', '🏆 Real Madrid scores!', '#f0c040');
+        scoreEl.textContent = '1 – 0';
+    } else if (ball.x <= 0 && ball.y >= 27 && ball.y <= 33) {
+        showGoal('⚽ GOAL!', '🏆 Barcelona scores!', '#4a90d9');
+        scoreEl.textContent = '0 – 1';
+    }
+}
+
+function showGoal(text, scorer, color) {
+    goalTextEl.textContent = text;
+    goalTextEl.style.color = color;
+    goalScorerEl.textContent = scorer;
+    goalBannerEl.classList.add('show');
+    goalBanner.showing = true;
+    stopPlayback();
+}
+
+function hideGoal() {
+    goalBannerEl.classList.remove('show');
+    goalBanner.showing = false;
+}
+
+// ───────────────────────────────────────────
+// Playback
+// ───────────────────────────────────────────
+function getInterval() {
+    const spd = parseInt(speedSlider.value);
+    return Math.max(80, 1000 / spd);
+}
+
+function startPlayback() {
+    if (playing) return;
+    if (currentIdx >= games.length - 1) {
+        currentIdx = 0;
+        hideGoal();
+    }
+    playing = true;
+    btnPlay.textContent = '⏸ Pause';
+    btnPlay.classList.add('paused');
+    function tick() {
+        if (!playing) return;
+        if (currentIdx < games.length - 1) {
+            drawRound(currentIdx + 1);
+            animTimer = setTimeout(tick, getInterval());
+        } else {
+            stopPlayback();
+        }
+    }
+    animTimer = setTimeout(tick, getInterval());
+}
+
+function stopPlayback() {
+    playing = false;
+    clearTimeout(animTimer);
+    btnPlay.textContent = '▶ Play';
+    btnPlay.classList.remove('paused');
+}
+
+// ───────────────────────────────────────────
+// Controls
+// ───────────────────────────────────────────
+btnPlay.addEventListener('click', () => {
+    if (playing) stopPlayback(); else startPlayback();
+});
+
+btnBack.addEventListener('click', () => {
+    stopPlayback();
+    hideGoal();
+    if (currentIdx > 0) drawRound(currentIdx - 1);
+});
+
+btnFwd.addEventListener('click', () => {
+    stopPlayback();
+    if (currentIdx < games.length - 1) drawRound(currentIdx + 1);
+    else checkGoal(games[currentIdx].ball);
+});
+
+btnReset.addEventListener('click', () => {
+    stopPlayback();
+    hideGoal();
+    scoreEl.textContent = '0 - 0';
+    drawRound(0);
+});
+
+timeline.addEventListener('input', () => {
+    stopPlayback();
+    hideGoal();
+    drawTimeFrame(parseInt(timeline.value), selectedTime);
+    curRoundEl.innerText = timeline.value
+});
+
+speedSlider.addEventListener('input', () => {
+    speedVal.textContent = speedSlider.value;
+});
+
+dropdown.addEventListener('change', (event) => {
+    let select = event.target;
+    selectedGame = parseInt(select.value);
+    timeline.max = games[selectedGame - 1].times.length;
+    timeline.value = 0
+    totalRoundsEl.textContent = games[selectedGame - 1].times.length;
+    drawTimeFrame(1, selectedGame)
+})
+
+// ───────────────────────────────────────────
+// Tooltip on hover
+// ───────────────────────────────────────────
+canvas.addEventListener('mousemove', (e) => {
+    if (!games.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleXr = CANVAS_W / rect.width;
+    const scaleYr = CANVAS_H / rect.height;
+    const mx = (e.clientX - rect.left) * scaleXr;
+    const my = (e.clientY - rect.top) * scaleYr;
+
+    const round = games[currentIdx];
+    let found = null;
+    for (const p of round.players) {
+    const dx = px(p.x) - mx;
+    const dy = py(p.y) - my;
+    if (Math.sqrt(dx * dx + dy * dy) < 14) { found = p; break; }
+    }
+
+    if (found) {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top = (e.clientY - 10) + 'px';
+    const tc = TEAM_COLORS[found.team];
+    tooltip.innerHTML =
+        `<b style="color:${tc.fill}">${found.name}</b><br>` +
+        `${found.team} · ${found.role}<br>` +
+        `pos (${found.x}, ${found.y})`;
+    } else {
+    tooltip.style.display = 'none';
+    }
+});
+
+canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 
 // ───────────────────────────────────────────
 // Drawing
@@ -245,160 +397,52 @@ function drawBall(ball) {
     ctx.shadowBlur = 0;
 }
 
-function drawRound(idx) {
-    if (!rounds.length) return;
-    const round = rounds[idx];
-    currentIdx = idx;
+// function drawRound(idx) {
+//     if (!games.length) return;
+//     const game = games[idx];
+//     const firstTimeframe = game.times[0];
+//     console.log(game);
+//     console.log(firstTimeframe);
+//     currentIdx = idx;
+
+//     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+//     drawField();
+//     console.log(firstTimeframe.players)
+//     firstTimeframe.players.forEach(drawPlayer);
+//     drawBall(firstTimeframe.ball);
+
+//     curRoundEl.textContent = 1;
+    
+//     // need to change this to actual time frame
+//     // timeline.value = idx;
+
+//     // Check last round for goal
+//     if (idx === games.length - 1) {
+//         checkGoal(game.ball);
+//     } else {
+//         hideGoal();
+//     }
+// }
+
+function drawTimeFrame(timeIdx, gameIdx) {
+    console.log(timeIdx, gameIdx);
+    if (!games.length) return;
+    const game = games[gameIdx];
+    const selectedTimeFrame = game.times[timeIdx - 1];
 
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
     drawField();
-    round.players.forEach(drawPlayer);
-    drawBall(round.ball);
+    selectedTimeFrame.players.forEach(drawPlayer);
+    drawBall(selectedTimeFrame.ball);
 
-    curRoundEl.textContent = round.round;
-    timeline.value = idx;
+    curRoundEl.textContent = gameIdx;
 
-    // Check last round for goal
-    if (idx === rounds.length - 1) {
-    checkGoal(round.ball);
-    } else {
-    hideGoal();
-    }
+    // if (gameIdx === games.length - 1) {
+    //     checkGoal(game.ball);
+    // } else {
+    //     hideGoal();
+    // }
 }
-
-// ───────────────────────────────────────────
-// Goal detection
-// ───────────────────────────────────────────
-function checkGoal(ball) {
-    if (ball.x >= 120 && ball.y >= 27 && ball.y <= 33) {
-    showGoal('⚽ GOAL!', '🏆 Real Madrid scores!', '#f0c040');
-    scoreEl.textContent = '1 – 0';
-    } else if (ball.x <= 0 && ball.y >= 27 && ball.y <= 33) {
-    showGoal('⚽ GOAL!', '🏆 Barcelona scores!', '#4a90d9');
-    scoreEl.textContent = '0 – 1';
-    }
-}
-
-function showGoal(text, scorer, color) {
-    goalTextEl.textContent = text;
-    goalTextEl.style.color = color;
-    goalScorerEl.textContent = scorer;
-    goalBannerEl.classList.add('show');
-    goalBanner.showing = true;
-    stopPlayback();
-}
-
-function hideGoal() {
-    goalBannerEl.classList.remove('show');
-    goalBanner.showing = false;
-}
-
-// ───────────────────────────────────────────
-// Playback
-// ───────────────────────────────────────────
-function getInterval() {
-    const spd = parseInt(speedSlider.value);
-    return Math.max(80, 1000 / spd);
-}
-
-function startPlayback() {
-    if (playing) return;
-    if (currentIdx >= rounds.length - 1) {
-    currentIdx = 0;
-    hideGoal();
-    }
-    playing = true;
-    btnPlay.textContent = '⏸ Pause';
-    btnPlay.classList.add('paused');
-    function tick() {
-    if (!playing) return;
-    if (currentIdx < rounds.length - 1) {
-        drawRound(currentIdx + 1);
-        animTimer = setTimeout(tick, getInterval());
-    } else {
-        stopPlayback();
-    }
-    }
-    animTimer = setTimeout(tick, getInterval());
-}
-
-function stopPlayback() {
-    playing = false;
-    clearTimeout(animTimer);
-    btnPlay.textContent = '▶ Play';
-    btnPlay.classList.remove('paused');
-}
-
-// ───────────────────────────────────────────
-// Controls
-// ───────────────────────────────────────────
-btnPlay.addEventListener('click', () => {
-    if (playing) stopPlayback(); else startPlayback();
-});
-
-btnBack.addEventListener('click', () => {
-    stopPlayback();
-    hideGoal();
-    if (currentIdx > 0) drawRound(currentIdx - 1);
-});
-
-btnFwd.addEventListener('click', () => {
-    stopPlayback();
-    if (currentIdx < rounds.length - 1) drawRound(currentIdx + 1);
-    else checkGoal(rounds[currentIdx].ball);
-});
-
-btnReset.addEventListener('click', () => {
-    stopPlayback();
-    hideGoal();
-    scoreEl.textContent = '0 – 0';
-    drawRound(0);
-});
-
-timeline.addEventListener('input', () => {
-    stopPlayback();
-    hideGoal();
-    drawRound(parseInt(timeline.value));
-});
-
-speedSlider.addEventListener('input', () => {
-    speedVal.textContent = speedSlider.value;
-});
-
-// ───────────────────────────────────────────
-// Tooltip on hover
-// ───────────────────────────────────────────
-canvas.addEventListener('mousemove', (e) => {
-    if (!rounds.length) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleXr = CANVAS_W / rect.width;
-    const scaleYr = CANVAS_H / rect.height;
-    const mx = (e.clientX - rect.left) * scaleXr;
-    const my = (e.clientY - rect.top) * scaleYr;
-
-    const round = rounds[currentIdx];
-    let found = null;
-    for (const p of round.players) {
-    const dx = px(p.x) - mx;
-    const dy = py(p.y) - my;
-    if (Math.sqrt(dx * dx + dy * dy) < 14) { found = p; break; }
-    }
-
-    if (found) {
-    tooltip.style.display = 'block';
-    tooltip.style.left = (e.clientX + 14) + 'px';
-    tooltip.style.top = (e.clientY - 10) + 'px';
-    const tc = TEAM_COLORS[found.team];
-    tooltip.innerHTML =
-        `<b style="color:${tc.fill}">${found.name}</b><br>` +
-        `${found.team} · ${found.role}<br>` +
-        `pos (${found.x}, ${found.y})`;
-    } else {
-    tooltip.style.display = 'none';
-    }
-});
-
-canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 
 // ───────────────────────────────────────────
 // Boot
