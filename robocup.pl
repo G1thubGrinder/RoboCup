@@ -44,22 +44,22 @@ restart_new_round :-
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
 
     % team1 — Real Madrid, 2-3-1 on left side
-    assertz(player(ronaldo,    team1, forward,    position(50, 30), 20, 10, 100)),
-    assertz(player(modric,     team1, midfield,   position(35, 15), 40, 8,  100)),
-    assertz(player(casemiro,   team1, midfield,   position(35, 30), 20, 10, 100)),
-    assertz(player(kroos,      team1, midfield,   position(35, 45), 10, 2,  100)),
-    assertz(player(varane,     team1, defender,   position(15, 23), 10, 6,  100)),
-    assertz(player(ramos,      team1, defender,   position(15, 37), 10, 6,  100)),
-    assertz(player(navas,      team1, goalkeeper, position(1,  30), 10, 2,  100)),
+    assertz(player(ronaldo,    team1, forward,    position(50, 30), 45, 10, 100)),
+    assertz(player(modric,     team1, midfield,   position(35, 15), 44, 8,  100)),
+    assertz(player(casemiro,   team1, midfield,   position(35, 30), 38, 10, 100)),
+    assertz(player(kroos,      team1, midfield,   position(35, 45), 42, 2,  100)),
+    assertz(player(varane,     team1, defender,   position(15, 23), 46, 6,  100)),
+    assertz(player(ramos,      team1, defender,   position(15, 37), 48, 6,  100)),
+    assertz(player(navas,      team1, goalkeeper, position(1,  30), 75, 2,  100)),
 
     % team2 — Barcelona, 2-3-1 on right side
     assertz(player(suarez,     team2, forward,    position(70, 30), 45, 10, 100)),
-    assertz(player(iniesta,    team2, midfield,   position(85, 15), 30, 8,  100)),
-    assertz(player(busquets,   team2, midfield,   position(85, 30), 20, 7,  100)),
-    assertz(player(xavi,       team2, midfield,   position(85, 45), 30, 7,  100)),
-    assertz(player(pique,      team2, defender,   position(105, 23), 10, 6, 100)),
-    assertz(player(mascherano, team2, defender,   position(105, 37), 10, 6, 100)),
-    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 10, 2, 100)).
+    assertz(player(iniesta,    team2, midfield,   position(85, 15), 44, 8,  100)),
+    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 7,  100)),
+    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 7,  100)),
+    assertz(player(pique,      team2, defender,   position(105, 23), 46, 6, 100)),
+    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 6, 100)),
+    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 75, 2, 100)).
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
 goal_position(team1, position(120, 30)).
