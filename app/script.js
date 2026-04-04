@@ -93,13 +93,13 @@ function getScoreResult() {
 }
 
 // ───────────────────────────────────────────
-// Goal detection
+// Goal showing and hiding
 // ───────────────────────────────────────────
 
 function showGoal(text, scorer, color) {
     goalTextEl.textContent = text;
-    goalTextEl.style.color = color;
     goalScorerEl.textContent = scorer;
+    goalTextEl.style.color = color;
     goalBannerEl.classList.add('show');
     goalBanner.showing = true;
     stopPlayback();
@@ -115,7 +115,6 @@ function hideGoal() {
 // ───────────────────────────────────────────
 function getInterval() {
     const spd = parseInt(speedSlider.value);
-    console.log(spd)
     return 800 / spd;
 }
 
@@ -149,7 +148,7 @@ function stopPlayback() {
 }
 
 // ───────────────────────────────────────────
-// Controls
+// Controls, Eventlisteners
 // ───────────────────────────────────────────
 btnPlay.addEventListener('click', () => {
     if (playing) stopPlayback(); else startPlayback();
@@ -428,14 +427,21 @@ function drawTimeFrame(timeIdx, gameIdx) {
     drawBall(selectedTimeFrame.ball);
     curRoundEl.textContent = timeIdx;
 
-    //change score
+    //change score and show goal
     if(timeIdx < game.times.length){
         team1Score.textContent = scoreSummary[gameIdx - 1].team1;
         team2Score.textContent = scoreSummary[gameIdx - 1].team2;
+        hideGoal();
     }
     else{
         team1Score.textContent = scoreSummary[gameIdx].team1;
         team2Score.textContent = scoreSummary[gameIdx].team2;
+        if (scoreSummary[gameIdx].team1 > scoreSummary[gameIdx - 1].team1){
+            showGoal("Real Madrid", "scored !!", TEAM_COLORS.team1.fill);
+        }
+        else{
+            showGoal("Barcelona", "scored !!", TEAM_COLORS.team2.fill);
+        }
     }
 
     // if (gameIdx === games.length - 1) {
