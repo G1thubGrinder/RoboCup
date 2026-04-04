@@ -440,16 +440,13 @@ function drawTimeFrame(timeIdx, gameIdx) {
         if (scoreSummary[gameIdx].team1 > scoreSummary[gameIdx - 1].team1){
             showGoal("Real Madrid", "scored !!", TEAM_COLORS.team1.fill);
         }
-        else{
+        else if(scoreSummary[gameIdx].team2 > scoreSummary[gameIdx - 1].team2){
             showGoal("Barcelona", "scored !!", TEAM_COLORS.team2.fill);
         }
+        else{
+            showGoal("The time has run out", "No one get the score", '#AA4A44')
+        }
     }
-
-    // if (gameIdx === games.length - 1) {
-    //     checkGoal(game.ball);
-    // } else {
-    //     hideGoal();
-    // }
 }
 
 // ───────────────────────────────────────────
