@@ -52,18 +52,18 @@ restart_new_round :-
     assertz(player(modric,     team1, midfield,   position(35, 15), 32, 2,  100)),
     assertz(player(casemiro,   team1, midfield,   position(35, 30), 35, 2, 100)),
     assertz(player(kroos,      team1, midfield,   position(35, 45), 33, 2,  100)),
-    assertz(player(varane,     team1, defender,   position(15, 23), 40, 1,  100)),
-    assertz(player(ramos,      team1, defender,   position(15, 37), 40, 1,  100)),
-    assertz(player(navas,      team1, goalkeeper, position(1,  30), 67, 1,  100)),
+    assertz(player(varane,     team1, defender,   position(15, 23), 40, 1.5,  100)),
+    assertz(player(ramos,      team1, defender,   position(15, 37), 40, 1.5,  100)),
+    assertz(player(navas,      team1, goalkeeper, position(1,  30), 67, 1.5,  100)),
 
     % team2 — Barcelona, 2-3-1 on right side
-    assertz(player(suarez,     team2, forward,    position(70, 30), 30, 3, 100)),
+    assertz(player(suarez,     team2, forward,    position(70, 30), 30, 2.5, 100)),
     assertz(player(iniesta,    team2, midfield,   position(85, 15), 32, 2,  100)),
     assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 2,  100)),
     assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 2,  100)),
-    assertz(player(pique,      team2, defender,   position(105, 23), 46, 1, 100)),
-    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 1, 100)),
-    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 65, 1, 100)).
+    assertz(player(pique,      team2, defender,   position(105, 23), 46, 1.5, 100)),
+    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 1.5, 100)),
+    assertz(player(bravo,      team2, goalkeeper, position(119, 30), 65, 1.5, 100)).
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
 goal_position(team1, position(120, 30)).
@@ -198,17 +198,18 @@ kick_ball(Name):-
 % Ball out of field
 %----------------------------------------------------------------------
 
+%Change from 0->2 and 120->116 to match the canvas size in html (padding 2 pixel)
 ball_out_of_field(team2) :-
     ball(position(BX, _)),
-    BX > 120, !.
+    BX > 116, !.
 
 ball_out_of_field(team1) :-
     ball(position(BX, _)),
-    BX < 0, !.
+    BX < 2, !.
 
 ball_out_of_field(Team) :-
     ball(position(BX, BY)),
-    (BY < 0 ; BY > 60),
+    (BY < 2 ; BY > 56),
     ( BX >= 60 -> Team = team2 ; Team = team1 ), !.
 
 %----------------------------------------------------------------------
