@@ -224,25 +224,26 @@ canvas.addEventListener('mousemove', (e) => {
     const mx = (e.clientX - rect.left) * scaleXr;
     const my = (e.clientY - rect.top) * scaleYr;
 
-    const round = games[timelineIdx];
+    const round = games[parseInt(dropdown.value) - 1].times[parseInt(timeline.value) - 1];
     let found = null;
     for (const p of round.players) {
-    const dx = px(p.x) - mx;
-    const dy = py(p.y) - my;
-    if (Math.sqrt(dx * dx + dy * dy) < 14) { found = p; break; }
+        const dx = px(p.x) - mx;
+        const dy = py(p.y) - my;
+        if (Math.sqrt(dx * dx + dy * dy) < 14) { found = p; break; }
     }
 
     if (found) {
-    tooltip.style.display = 'block';
-    tooltip.style.left = (e.clientX + 14) + 'px';
-    tooltip.style.top = (e.clientY - 10) + 'px';
-    const tc = TEAM_COLORS[found.team];
-    tooltip.innerHTML =
-        `<b style="color:${tc.fill}">${found.name}</b><br>` +
-        `${found.team} · ${found.role}<br>` +
-        `pos (${found.x}, ${found.y})`;
-    } else {
-    tooltip.style.display = 'none';
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 14) + 'px';
+        tooltip.style.top = (e.clientY - 10) + 'px';
+        const tc = TEAM_COLORS[found.team];
+        tooltip.innerHTML =
+            `<b style="color:${tc.fill}">${found.name}</b><br>` +
+            `${found.team} - ${found.role}<br>` +
+            `pos (${found.x}, ${found.y})`;
+    } 
+    else {
+        tooltip.style.display = 'none';
     }
 });
 
@@ -265,9 +266,9 @@ function drawField() {
     // Stripe pattern
     ctx.fillStyle = 'rgba(255,255,255,0.025)';
     for (let i = 0; i < FIELD_W; i += 10) {
-    if (Math.floor(i / 10) % 2 === 0) {
-        ctx.fillRect(px(i), 0, px(10), CANVAS_H);
-    }
+        if (Math.floor(i / 10) % 2 === 0) {
+            ctx.fillRect(px(i), 0, px(10), CANVAS_H);
+        }
     }
 
     ctx.strokeStyle = 'rgba(255,255,255,0.55)';
