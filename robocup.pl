@@ -57,7 +57,7 @@ restart_new_round :-
     assertz(player(navas,      team1, goalkeeper, position(1,  30), 67, 1.5,  100)),
 
     % team2 — Barcelona, 2-3-1 on right side
-    assertz(player(suarez,     team2, forward,    position(70, 30), 30, 2.5, 100)),
+    assertz(player(messi,     team2, forward,    position(70, 30), 30, 2.5, 100)),
     assertz(player(iniesta,    team2, midfield,   position(85, 15), 32, 2,  100)),
     assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 2,  100)),
     assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 2,  100)),
@@ -298,6 +298,8 @@ simulate_round(GameNum, Ticks) :-
 
     log_time_frame(GameNum, Ticks),
 
+    ( goalkeeper_save -> true ; true ),
+
     ( check_goal ->
         true   % round ends here, return to round_simulation
     ; ball_out_of_field(Team) ->
@@ -391,6 +393,34 @@ count_goals([_ | Rest], T1, T2, R1, R2) :-
 %----------------------------------------------------------------------
 % Logging function
 %----------------------------------------------------------------------
+
+%----------------------------------------------------------------------
+% Goalkeeper Movement
+%----------------------------------------------------------------------
+
+goalkeeper_save_radius(8).
+goalkeeper_save_sigma(4).
+
+goalkeeper_save :-
+    ball(position(BX, BY)),
+    goalkeeper_save_radius(Radius),
+    goalkeeper_save_sigma(Sigma),
+    player(Name, _, goalkeeper, position(KX, KY), _, _, _),
+    DX is BX - KX,
+    DY is BY - KY,
+    Dist is sqrt(DX * DX + DY * DY),
+    Dist =< Radius,
+    Probability is exp(- (Dist * Dist) / (2 * Sigma * Sigma)),
+    random(Rnd),
+    Rnd < Probability,
+    retractall(ball(position(_, _))),
+    assertz(ball(position(KX, KY))),
+    format('~nGoalkeeper ~w saved the ball (p=~2f, d=~2f)~n', [Name, Probability, Dist]),
+    !.
+
+
+
+
 
 %This part is trying to imitate JSON format and write to variable Stream with prolog write 
 
