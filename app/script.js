@@ -51,6 +51,8 @@ const goalTextEl = document.getElementById('goal-text');
 const goalScorerEl = document.getElementById('goal-scorer');
 const scoreEl = document.getElementById('score');
 const tooltip = document.getElementById('tooltip');
+const eventTextEl = document.getElementById('event-text');
+const finalScoreEl = document.getElementById('final-score');
 
 // ───────────────────────────────────────────
 // Load data
@@ -76,6 +78,10 @@ function init() {
     timeline.max = games[0].times.length;
     timeline.value = 0;
     totalRoundsEl.textContent = games[0].times.length;
+    const finalGame = games[games.length - 1];
+    if (finalGame && finalGame.score) {
+        finalScoreEl.textContent = `${finalGame.score.team1} - ${finalGame.score.team2}`;
+    }
     for(let i = 1; i <= games.length; ++i){
         let option = document.createElement("option");
         option.value = i;
@@ -418,6 +424,24 @@ function drawBall(ball) {
     ctx.shadowBlur = 0;
 }
 
+// ───────────────────────────────────────────
+// Action text
+// ───────────────────────────────────────────
+function formatAction(action) {
+    if (!action || action === '') return '—';
+    const parts = action.split(';').filter(Boolean);
+    const msgs = [];
+    parts.forEach((p) => {
+        const [type, who] = p.split(':');
+        if (type === 'kick' && who) msgs.push(`${who} kicks the ball`);
+        else if (type === 'save' && who) msgs.push(`${who} saves the ball`);
+        else if (type === 'goal' && who) msgs.push(`goal for ${who}`);
+        else if (type === 'ball_out' && who) msgs.push(`ball out: ${who}`);
+        else msgs.push(p);
+    });
+    return msgs.join(' • ');
+}
+
 function drawTimeFrame(timeIdx, gameIdx) {
     if (!games.length) return;
     const game = games[gameIdx - 1];
@@ -427,6 +451,7 @@ function drawTimeFrame(timeIdx, gameIdx) {
     selectedTimeFrame.players.forEach(drawPlayer);
     drawBall(selectedTimeFrame.ball);
     curRoundEl.textContent = timeIdx;
+    eventTextEl.textContent = formatAction(selectedTimeFrame.action);
 
     //change score and show goal
     if(timeIdx < game.times.length){
