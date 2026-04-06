@@ -114,6 +114,62 @@ canvas {
     flex-wrap: wrap;
 }
 
+.event-row {
+    width: 100%;
+    max-width: 960px;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #101828;
+    border: 1px solid #2a3655;
+    border-radius: 12px;
+    color: #e8ecf0;
+    font-size: 0.9rem;
+}
+
+.event-label {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: #9fb3d6;
+}
+
+.event-text {
+    font-weight: 600;
+    color: #f3d98b;
+}
+
+.final-row {
+    width: 100%;
+    max-width: 960px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #0f2435;
+    border: 1px solid #2a3655;
+    border-radius: 12px;
+    color: #e8ecf0;
+    font-size: 0.9rem;
+}
+
+.final-label {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: #8fb9d9;
+}
+
+.final-text {
+    font-weight: 700;
+    color: #a7f3ff;
+}
+
 .btn {
     background: #1e2a45;
     border: 1px solid #2e3f66;
