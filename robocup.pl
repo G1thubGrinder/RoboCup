@@ -455,10 +455,6 @@ count_goals([_ | Rest], T1, T2, R1, R2) :-
     count_goals(Rest, T1, T2, R1, R2).
 
 %----------------------------------------------------------------------
-% Logging function
-%----------------------------------------------------------------------
-
-%----------------------------------------------------------------------
 % Goalkeeper Movement
 %----------------------------------------------------------------------
 
@@ -495,6 +491,10 @@ filter_action_parts(['' | Tail], Clean) :-
 filter_action_parts([H | Tail], [H | CleanTail]) :-
     H \= '',
     filter_action_parts(Tail, CleanTail).
+
+%----------------------------------------------------------------------
+% Logging function
+%----------------------------------------------------------------------
 
 %This part is trying to imitate JSON format and write to variable Stream with prolog write 
 
