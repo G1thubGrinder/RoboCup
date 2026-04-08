@@ -149,11 +149,19 @@ running_boundary(Name) :-
     ; true ).
 
 %----------------------------------------------------------------------
+% Pass Target Logic
+%----------------------------------------------------------------------
+
+get_pass_target(Team, Role, TX, TY) :-
+    player(_, Team, Role, position(TX, TY), _, _, _),
+    !. % Pick the first available player with the specified role
+
+%----------------------------------------------------------------------
 % Player attempt to kicking the ball
 %----------------------------------------------------------------------
 
 kick_ball(Name):-
-    player(Name,Team,_,position(X1,Y1),Kickpower,Speed,_),
+    player(Name,Team,Role,position(X1,Y1),Kickpower,Speed,_),
     ball(position(BX,BY)),
 
     % Check if player is close enough to kick the ball (within the speed range)
@@ -162,19 +170,51 @@ kick_ball(Name):-
     XDist =< sqrt(Speed),
     YDist =< sqrt(Speed),
 
-    % Kick toward opponent goal
-    goal_position(Team, position(GoalX, GoalY)),
-    XDiff is GoalX - BX,
-    YDiff is GoalY - BY,
+    % Determine target based on Role
+    ( Role == defender ->
+        ( get_pass_target(Team, midfield, TX, TY) -> 
+            TargetX = TX, TargetY = TY, PowerMult = 0.9 
+        ; 
+            goal_position(Team, position(TargetX, TargetY)), PowerMult = 1.0 
+        ),
+        ActionStr = 'passes to midfield'
+    ; Role == midfield ->
+        ( get_pass_target(Team, forward, TX, TY) -> 
+            TargetX = TX, TargetY = TY, PowerMult = 0.9 
+        ; 
+            goal_position(Team, position(TargetX, TargetY)), PowerMult = 1.0 
+        ),
+        ActionStr = 'passes to forward'
+    ; Role == forward ->
+        goal_position(Team, position(GoalX, GoalY)),
+        DistToGoal is sqrt((GoalX - BX)**2 + (GoalY - BY)**2),
+        ( DistToGoal < 40 ->
+            TargetX = GoalX, TargetY = GoalY, PowerMult = 1.3, % Shoot
+            ActionStr = 'shoots at goal'
+        ;
+            TargetX = GoalX, TargetY = GoalY, PowerMult = 0.2, % Dribble towards goal
+            ActionStr = 'dribbles the ball'
+        )
+    ; % Goalkeeper
+        goal_position(Team, position(TargetX, TargetY)), PowerMult = 1.0,
+        ActionStr = 'clears the ball'
+    ),
 
-    % Random kicking power
+    XDiff is TargetX - BX,
+    YDiff is TargetY - BY,
+
+    % Random kicking power (adjusted by role multiplier)
     random(R1), % 0.0 - 1.0
-    KickpowerFactor is (4 * ((R1 - 0.5)**3) + 1), % [0.5, 1.5]
+    KickpowerFactor is (4 * ((R1 - 0.5)**3) + 1) * PowerMult,
     ActualKickpower is Kickpower * KickpowerFactor,
     
-    % Random kicking angle
+    % Random kicking angle (reduce angle error for dribbling/passing to make it look intentional)
     random(R2),
-    Angle is 4 * ((R2 - 0.5)**3), % [-0.5, 0.5] rad
+    ( Role == forward, PowerMult < 1.0 -> 
+        Angle is 0.5 * ((R2 - 0.5)**3) % tighter angle for dribble
+    ;
+        Angle is 2 * ((R2 - 0.5)**3)
+    ),
 
     % Calculate the final position of the ball based on the kicking power
     calculate_x_y_distance(ActualKickpower, XDiff, YDiff, XDis, YDis),
@@ -185,8 +225,8 @@ kick_ball(Name):-
     NewBX is BX + round(RandomizedXDis),
     NewBY is BY + round(RandomizedYDis),
     format(
-        '~nThe ball is kicked from (~w, ~w) to (~w, ~w) by ~w ~n',
-        [BX, BY, NewBX, NewBY, Name]
+        '~nThe ball is kicked from (~w, ~w) to (~w, ~w) by ~w (~w)~n',
+        [BX, BY, NewBX, NewBY, Name, ActionStr]
     ),
     format(
         'with kickpower factor of ~2f and angle of ~4f rad ~n',
@@ -415,6 +455,10 @@ count_goals([_ | Rest], T1, T2, R1, R2) :-
     count_goals(Rest, T1, T2, R1, R2).
 
 %----------------------------------------------------------------------
+% Logging function
+%----------------------------------------------------------------------
+
+%----------------------------------------------------------------------
 % Goalkeeper Movement
 %----------------------------------------------------------------------
 
@@ -451,10 +495,6 @@ filter_action_parts(['' | Tail], Clean) :-
 filter_action_parts([H | Tail], [H | CleanTail]) :-
     H \= '',
     filter_action_parts(Tail, CleanTail).
-
-%----------------------------------------------------------------------
-% Logging function
-%----------------------------------------------------------------------
 
 %This part is trying to imitate JSON format and write to variable Stream with prolog write 
 
