@@ -23,7 +23,7 @@ const ROLE_SHAPE = {
 // State
 // ───────────────────────────────────────────
 let games = [];
-let scoreSummary = [{"team1": 0,"team2": 0}];
+let scoreSummary = [{ "team1": 0, "team2": 0 }];
 let timelineIdx = 1;
 let playing = false;
 let animTimer = null;
@@ -66,7 +66,7 @@ async function loadLog() {
         init();
     } catch (e) {
         document.getElementById('field-wrapper').innerHTML =
-        `<div class="loading">
+            `<div class="loading">
         ⚠️ Could not load <code>game_log.json</code>.<br><br>
         The error is ${e}
         </div>`;
@@ -76,24 +76,24 @@ async function loadLog() {
 
 function init() {
     timeline.max = games[0].times.length;
-    timeline.value = 0;
+    timeline.value = 1;
     totalRoundsEl.textContent = games[0].times.length;
     const finalGame = games[games.length - 1];
     if (finalGame && finalGame.score) {
         finalScoreEl.textContent = `${finalGame.score.team1} - ${finalGame.score.team2}`;
     }
-    for(let i = 1; i <= games.length; ++i){
+    for (let i = 1; i <= games.length; ++i) {
         let option = document.createElement("option");
         option.value = i;
         option.text = i;
         dropdown.appendChild(option)
     }
     getScoreResult()
-    drawTimeFrame(1,1);
+    drawTimeFrame(1, 1);
 }
 
 function getScoreResult() {
-    for(let i = 0; i < games.length; ++i){
+    for (let i = 0; i < games.length; ++i) {
         scoreSummary.push(games[i].score);
     }
 }
@@ -126,7 +126,7 @@ function getInterval() {
 
 function startPlayback() {
     if (playing) return;
-    if (timelineIdx >= games[parseInt(dropdown.value) - 1].times.length - 1) {
+    if (timelineIdx >= games[parseInt(dropdown.value) - 1].times.length) {
         timelineIdx = 0;
         hideGoal();
     }
@@ -138,6 +138,7 @@ function startPlayback() {
         if (timelineIdx <= games[parseInt(dropdown.value) - 1].times.length - 1) {
             drawTimeFrame(timelineIdx + 1, parseInt(dropdown.value));
             timelineIdx += 1;
+            timeline.value = timelineIdx;
             animTimer = setTimeout(tick, getInterval());
         } else {
             stopPlayback();
@@ -161,7 +162,7 @@ btnPlay.addEventListener('click', () => {
 });
 
 const handleBtnBack = () => {
-    if(timelineIdx <= 1) return;
+    if (timelineIdx <= 1) return;
     stopPlayback();
     hideGoal();
     timelineIdx -= 1;
@@ -171,11 +172,11 @@ const handleBtnBack = () => {
 
 btnBack.addEventListener('click', handleBtnBack);
 btnBack.addEventListener('keydown', (event) => {
-    if(event.key === "ArrowLeft") handleBtnBack();
+    if (event.key === "ArrowLeft") handleBtnBack();
 })
 
 const handleBtnFwd = () => {
-    if(timelineIdx >= games[parseInt(dropdown.value) - 1].times.length) return;
+    if (timelineIdx >= games[parseInt(dropdown.value) - 1].times.length) return;
     stopPlayback();
     timelineIdx += 1;
     timeline.value = timelineIdx;
@@ -184,14 +185,15 @@ const handleBtnFwd = () => {
 
 btnFwd.addEventListener('click', handleBtnFwd);
 btnFwd.addEventListener('keydown', (event) => {
-    if(event.key === "ArrowRight") handleBtnFwd();
+    if (event.key === "ArrowRight") handleBtnFwd();
 });
 
 btnReset.addEventListener('click', () => {
     stopPlayback();
     hideGoal();
+    timelineIdx = 1;
     timeline.value = 1;
-    drawTimeFrame(1,parseInt(dropdown.value))
+    drawTimeFrame(1, parseInt(dropdown.value));
 });
 
 timeline.addEventListener('input', () => {
@@ -209,10 +211,10 @@ speedSlider.addEventListener('input', () => {
 dropdown.addEventListener('change', (event) => {
     let select = event.target;
     let selectedGame = parseInt(select.value);
-    
+
     //changing variable based on the new input
     timeline.max = games[selectedGame - 1].times.length;
-    timeline.value = 0
+    timeline.value = 1
     totalRoundsEl.textContent = games[selectedGame - 1].times.length;
     timelineIdx = 1;
     stopPlayback();
@@ -230,7 +232,8 @@ canvas.addEventListener('mousemove', (e) => {
     const mx = (e.clientX - rect.left) * scaleXr;
     const my = (e.clientY - rect.top) * scaleYr;
 
-    const round = games[parseInt(dropdown.value) - 1].times[parseInt(timeline.value) - 1];
+    const round = games[parseInt(dropdown.value) - 1].times[timelineIdx - 1];
+    if (!round) return;
     let found = null;
     for (const p of round.players) {
         const dx = px(p.x) - mx;
@@ -247,7 +250,7 @@ canvas.addEventListener('mousemove', (e) => {
             `<b style="color:${tc.fill}">${found.name}</b><br>` +
             `${found.team} - ${found.role}<br>` +
             `pos (${found.x}, ${found.y})`;
-    } 
+    }
     else {
         tooltip.style.display = 'none';
     }
@@ -343,27 +346,27 @@ function drawPlayer(p) {
     ctx.lineWidth = 2;
 
     switch (shape) {
-    case 'circle':
-        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        break;
-    case 'square':
-        ctx.fillRect(-r, -r, r * 2, r * 2);
-        ctx.strokeRect(-r, -r, r * 2, r * 2);
-        break;
-    case 'diamond':
-        ctx.beginPath();
-        ctx.moveTo(0, -r); ctx.lineTo(r, 0); ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.closePath();
-        ctx.fill(); ctx.stroke();
-        break;
-    case 'hexagon':
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i - Math.PI / 6;
-        const hx = r * Math.cos(angle), hy = r * Math.sin(angle);
-        i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
-        }
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        break;
+        case 'circle':
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            break;
+        case 'square':
+            ctx.fillRect(-r, -r, r * 2, r * 2);
+            ctx.strokeRect(-r, -r, r * 2, r * 2);
+            break;
+        case 'diamond':
+            ctx.beginPath();
+            ctx.moveTo(0, -r); ctx.lineTo(r, 0); ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            break;
+        case 'hexagon':
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - Math.PI / 6;
+                const hx = r * Math.cos(angle), hy = r * Math.sin(angle);
+                i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+            }
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            break;
     }
 
     ctx.shadowBlur = 0;
@@ -416,9 +419,9 @@ function drawBall(ball) {
     ctx.fillStyle = '#222';
     const patches = [[0, -4], [4, 2], [-4, 2]];
     patches.forEach(([ox, oy]) => {
-    ctx.beginPath();
-    ctx.arc(x + ox, y + oy, 2, 0, Math.PI * 2);
-    ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + ox, y + oy, 2, 0, Math.PI * 2);
+        ctx.fill();
     });
 
     ctx.shadowBlur = 0;
@@ -454,21 +457,21 @@ function drawTimeFrame(timeIdx, gameIdx) {
     eventTextEl.textContent = formatAction(selectedTimeFrame.action);
 
     //change score and show goal
-    if(timeIdx < game.times.length){
+    if (timeIdx < game.times.length) {
         team1Score.textContent = scoreSummary[gameIdx - 1].team1;
         team2Score.textContent = scoreSummary[gameIdx - 1].team2;
         hideGoal();
     }
-    else{
+    else {
         team1Score.textContent = scoreSummary[gameIdx].team1;
         team2Score.textContent = scoreSummary[gameIdx].team2;
-        if (scoreSummary[gameIdx].team1 > scoreSummary[gameIdx - 1].team1){
+        if (scoreSummary[gameIdx].team1 > scoreSummary[gameIdx - 1].team1) {
             showGoal("Real Madrid", "scored !!", TEAM_COLORS.team1.fill);
         }
-        else if(scoreSummary[gameIdx].team2 > scoreSummary[gameIdx - 1].team2){
+        else if (scoreSummary[gameIdx].team2 > scoreSummary[gameIdx - 1].team2) {
             showGoal("Barcelona", "scored !!", TEAM_COLORS.team2.fill);
         }
-        else{
+        else {
             showGoal("The time has run out", "No one get the score", '#AA4A44')
         }
     }
