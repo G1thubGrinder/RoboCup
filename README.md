@@ -1,4 +1,4 @@
-# ⚽ RoboCup Demo Visualizer
+#  RoboCup Demo Visualizer
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
 ![Language](https://img.shields.io/badge/language-Prolog%20%7C%20Javascript-orange)
@@ -7,7 +7,7 @@ This project demonstrates a RoboCup simulation using **SWI-Prolog** and provides
 
 ---
 
-## 📌 Overview
+##  Overview
 The workflow of this project is:
 1. Run the Prolog simulation to generate match data
 2. Start a local web server
@@ -15,7 +15,7 @@ The workflow of this project is:
 
 ---
 
-## ⚙️ Prerequisites
+##  Prerequisites
 Make sure you have the following installed:
 
 - [SWI-Prolog](https://www.swi-prolog.org/)
@@ -23,9 +23,9 @@ Make sure you have the following installed:
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
-### 1️⃣ Generate Game Log
+###  1. Generate Game Log
 Consult robocup.pl file
 
 ``` prolog
@@ -37,7 +37,7 @@ round_simulation(10).
 ```
 This command will generate the match that play for 10 goals. The file **game_log.json** will be exported automatically inside the same directory after this command is executed.
 
-### 2️⃣ Start local server
+### 2. Start local server
 Windows
 ```cmd or windows-powershell
 run.bat
@@ -48,7 +48,7 @@ chmod +x run.sh
 ./run.sh
 ```
 
-### 3️⃣ Open Visualizer
+### 3. Open Visualizer
 After starting the server, you will see a message like:
 ```
 Starting demo server at http://localhost:8080/app/visualizer.html
