@@ -299,11 +299,15 @@ function drawField() {
     ctx.fill();
 
     // Goal areas  (width=6, height=20)
-    ctx.strokeRect(px(2), py(20), px(6), py(20));
-    ctx.strokeRect(px(112), py(20), px(6), py(20));
+    ctx.strokeRect(px(2), py(22.5), px(6), py(15));
+    ctx.strokeRect(px(112), py(22.5), px(6), py(15));
+
+    // Penalty Box
+    ctx.strokeRect(px(2), py(13.5), px(18), py(33));
+    ctx.strokeRect(px(100), py(13.5), px(18), py(33));
 
     // Goals (net area)
-    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
     ctx.lineWidth = 3;
     ctx.strokeRect(px(0), py(27), px(2), py(6));   // left goal
     ctx.strokeRect(px(118), py(27), px(2), py(6)); // right goal
@@ -311,8 +315,8 @@ function drawField() {
     ctx.strokeStyle = 'rgba(255,255,255,0.55)';
 
     // Penalty spots
-    drawDot(px(8), py(30), 4, '#ffffffaa');
-    drawDot(px(112), py(30), 4, '#ffffffaa');
+    drawDot(px(13), py(30), 4, '#ffffffaa');
+    drawDot(px(107), py(30), 4, '#ffffffaa');
 }
 
 function drawDot(x, y, r, color) {
