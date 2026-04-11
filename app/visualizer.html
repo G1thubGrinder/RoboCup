@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoboCup Visualizer - Real Madrid vs Barcelona</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header>
+    <div class="title">⚽ RoboCup <span>Visualizer</span></div>
+    <div class="scoreboard">
+      <div class="team-name team1-name">Real Madrid</div>
+      <div class="score" id="score"><b id="team1Score">0</b> - <b id="team2Score">0</b></div>
+      <div class="team-name team2-name">Barcelona</div>
+    </div>
+  </header>
+
+  <div class="field-wrapper" id="field-wrapper">
+    <canvas id="field" width="960" height="480"></canvas>
+    <div id="goal-banner">
+      <div class="goal-text" id="goal-text">⚽ GOAL!</div>
+      <div class="goal-scorer" id="goal-scorer"></div>
+    </div>
+  </div>
+
+  <div id="tooltip"></div>
+
+  <div class="controls">
+    <div class="controls-row">
+      <button class="btn" id="btn-back">◀ Step</button>
+      <button class="btn primary" id="btn-play">▶ Play</button>
+      <button class="btn" id="btn-fwd">Step ▶</button>
+      <button class="btn" id="btn-reset">↺ Reset</button>
+      <select class="btn" id="dropdown"></select>
+      <div class="round-info">Time frame <b id="cur-round">1</b> / <b id="total-rounds">—</b></div>
+    </div>
+    <input type="range" id="timeline" min="1" value="1" />
+    <div class="speed-row">
+      🐢 Speed
+      <input type="range" id="speed" min="1" max="8" value="2" step="1"/>
+      🚀 <span id="speed-val">1</span>x
+    </div>
+  </div>
+
+  <div class="event-row">
+    <div class="event-label">Action</div>
+    <div class="event-text" id="event-text">—</div>
+  </div>
+  <div class="final-row">
+    <div class="final-label">Final Score</div>
+    <div class="final-text" id="final-score">—</div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#f0c040;border-color:#b8900a"></div>Real Madrid (team1)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#a0c4ff;border-color:#3070c0"></div>Barcelona (team2)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#fff;border-color:#888;width:10px;height:10px"></div>Ball
+    </div>
+    <div class="legend-item">⬡ Goalkeeper &nbsp; ● Forward &nbsp; ■ Midfielder &nbsp; ◆ Defender</div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
