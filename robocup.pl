@@ -112,25 +112,40 @@ move_towards_ball(Name):-
 
 running_boundary(Name) :-
     field(size(FieldW, FieldH)),
-    HalfW   is FieldW // 2,
-    MidLow  is FieldW // 4,
-    MidHigh is (3 * FieldW) // 4,
+    HalfW    is FieldW // 2,
+    MidLow   is FieldW // 4,
+    MidHigh  is (3 * FieldW) // 4,
     player(Name, Team, Role, position(X, Y), Kickpower, Speed, Stamina),
-    ball(position(BX, _)),
+    ball(position(BX, BY)),
 
     % CASE 1: clamp to field boundaries (always enforced)
     ( X < 0      -> NewX is 0      ; X > FieldW -> NewX is FieldW ; NewX is X ),
     ( Y < 0      -> NewY is 0      ; Y > FieldH -> NewY is FieldH ; NewY is Y ),
 
-    % CASE 2: defenders stay in own half — only if ball is NOT in restricted area
+    % CASE 2: defenders stay in own half — held back only when ball is NOT in opp. half
     ( (Role = defender, Team = team1, NewX > HalfW, BX =< HalfW) -> FinalX is HalfW ;
       (Role = defender, Team = team2, NewX < HalfW, BX >= HalfW) -> FinalX is HalfW ;
       FinalX is NewX ),
 
+    % CASE 2b: defender must keep 10-unit X gap from nearest same-team midfielder
+    ( (Role = defender, Team = team1) ->
+        findall(MX, player(_, team1, midfield, position(MX, _), _, _, _), MidXs),
+        ( MidXs \= [], min_list(MidXs, MinMidX) ->
+            MaxDefX is MinMidX - 10,
+            ( FinalX > MaxDefX -> FinalXD is MaxDefX ; FinalXD is FinalX )
+        ; FinalXD is FinalX )
+    ; (Role = defender, Team = team2) ->
+        findall(MX, player(_, team2, midfield, position(MX, _), _, _, _), MidXs),
+        ( MidXs \= [], max_list(MidXs, MaxMidX) ->
+            MinDefX is MaxMidX + 10,
+            ( FinalX < MinDefX -> FinalXD is MinDefX ; FinalXD is FinalX )
+        ; FinalXD is FinalX )
+    ; FinalXD is FinalX ),
+
     % CASE 3: forwards stay in attacking half — only if ball is NOT in their zone
-    ( (Role = forward, Team = team1, FinalX < HalfW, BX < HalfW) -> FinalX2 is HalfW ;
-      (Role = forward, Team = team2, FinalX > HalfW, BX > HalfW) -> FinalX2 is HalfW ;
-      FinalX2 is FinalX ),
+    ( (Role = forward, Team = team1, FinalXD < HalfW, BX < HalfW) -> FinalX2 is HalfW ;
+      (Role = forward, Team = team2, FinalXD > HalfW, BX > HalfW) -> FinalX2 is HalfW ;
+      FinalX2 is FinalXD ),
 
     % CASE 4: midfielders stay in middle band — only if ball is NOT in restricted area
     ( (Role = midfield, FinalX2 > MidHigh, BX =< MidHigh) -> FinalX3 is MidHigh ;
@@ -138,15 +153,55 @@ running_boundary(Name) :-
       FinalX3 is FinalX2 ),
 
     % CASE 5: goalkeeper stays near own goal — only if ball is NOT in their area
-    ( (Role = goalkeeper, Team = team1, FinalX3 > 10,  BX > 10)  -> FinalX4 is 10  ;
-      (Role = goalkeeper, Team = team2, FinalX3 < 110, BX < 110) -> FinalX4 is 110 ;
+    ( (Role = goalkeeper, Team = team1, FinalX3 > 5,  BX > 5)  -> FinalX4 is 5  ;
+      (Role = goalkeeper, Team = team2, FinalX3 < 115, BX < 115) -> FinalX4 is 115 ;
       FinalX4 is FinalX3 ),
 
+    % CASE 6: Y-axis constraints per role
+    ( Role = goalkeeper ->
+        % Goalkeeper: snap to goal-third matching ball Y-third
+        %   field thirds: top [0,20) → goal top Y=24, mid [20,40] → Y=30, bot (40,60] → Y=36
+        ThirdH is FieldH // 3,
+        ( BY < ThirdH         -> FinalY is 24   % top third  → top of goal
+        ; BY =< 2 * ThirdH   -> FinalY is 30   % mid third  → centre of goal
+        ;                        FinalY is 36   % bot third  → bottom of goal
+        )
+    ; (Role = defender ; Role = midfield) ->
+        % Skip Y spacing if player is within kick range of the ball on Y axis,
+        % so they are not pushed away before they can kick.
+        KickRangeY is sqrt(Speed),
+        YDistBall  is abs(BY - NewY),
+        ( YDistBall =< KickRangeY ->
+            FinalY is NewY          % close enough to ball — preserve position to allow kick
+        ;
+            % Not in kick range: enforce 5-unit spacing from same-role teammates
+            findall(TY, (player(Other, Team, Role, position(_, TY), _, _, _), Other \= Name), TeamY),
+            adjust_y_spacing(NewY, TeamY, 7, SpacedY),
+            FinalY is max(0, min(FieldH, SpacedY))
+        )
+    ;
+        % Forwards: just field clamp
+        FinalY is NewY
+    ),
+
     % Only update if position actually changed
-    ( (FinalX4 =\= X ; NewY =\= Y) ->
+    ( (FinalX4 =\= X ; FinalY =\= Y) ->
         retract(player(Name, Team, Role, position(X, Y), Kickpower, Speed, Stamina)),
-        assertz(player(Name, Team, Role, position(FinalX4, NewY), Kickpower, Speed, Stamina))
+        assertz(player(Name, Team, Role, position(FinalX4, FinalY), Kickpower, Speed, Stamina))
     ; true ).
+
+% adjust_y_spacing(+Y, +TeammateYList, +MinDist, -FinalY)
+% Push Y away from any teammate closer than MinDist on the Y axis.
+adjust_y_spacing(Y, [], _, Y).
+adjust_y_spacing(Y, [TY | Rest], MinDist, FinalY) :-
+    Diff is Y - TY,
+    AbsDiff is abs(Diff),
+    ( AbsDiff < MinDist ->
+        ( Diff >= 0 -> Adjusted is TY + MinDist ; Adjusted is TY - MinDist )
+    ;
+        Adjusted = Y
+    ),
+    adjust_y_spacing(Adjusted, Rest, MinDist, FinalY).
 
 %----------------------------------------------------------------------
 % Pass Target Logic
@@ -337,15 +392,32 @@ simulate_round(GameNum, Ticks) :-
         player(Name,_,_,_,_,_,_),
         ( move_towards_ball(Name), running_boundary(Name) )
     ),
-    % Only first eligible player kicks per tick
+    % Tackle phase: defenders attempt to dispossess nearby opponents
     retractall(ball_kicked),
     retractall(last_kick(_)),
     forall(
-        player(Name,_,_,_,_,_,_),
-        ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
+        player(Name, _, defender, _, _, _, _),
+        ( (\+ ball_kicked, tackle_attempt(Name)) -> assertz(ball_kicked) ; true )
     ),
 
-    ( last_kick(Kicker) ->
+    % Record whether a tackle happened this tick before kick phase clears ball_kicked
+    ( ball_kicked -> TackledThisTick = true ; TackledThisTick = false ),
+
+    ( TackledThisTick = true, last_kick(Tackler) ->
+        atomic_list_concat(['tackle:', Tackler], ActionTackle)
+    ; ActionTackle = ''
+    ),
+
+    % Kick phase: only runs if no tackle happened
+    ( TackledThisTick = false ->
+        retractall(ball_kicked),
+        forall(
+            player(Name,_,_,_,_,_,_),
+            ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
+        )
+    ; true ),
+
+    ( TackledThisTick = false, last_kick(Kicker) ->
         atomic_list_concat(['kick:', Kicker], ActionKick)
     ; ActionKick = ''
     ),
@@ -358,18 +430,18 @@ simulate_round(GameNum, Ticks) :-
 
     ( check_goal(GoalTeam) ->
         atomic_list_concat(['goal:', GoalTeam], ActionGoal),
-        build_action([ActionKick, ActionSave, ActionGoal], Action),
+        build_action([ActionTackle, ActionKick, ActionSave, ActionGoal], Action),
         log_time_frame(GameNum, Ticks, Action),
         true   % round ends here, return to round_simulation
     ; ball_out_of_field(Team) ->
         atomic_list_concat(['ball_out:', Team], ActionOut),
-        build_action([ActionKick, ActionSave, ActionOut], Action),
+        build_action([ActionTackle, ActionKick, ActionSave, ActionOut], Action),
         log_time_frame(GameNum, Ticks, Action),
         goal_kick_back(Team),
         NextTick is Ticks - 1,
         simulate_round(GameNum, NextTick)
     ;
-        build_action([ActionKick, ActionSave], Action),
+        build_action([ActionTackle, ActionKick, ActionSave], Action),
         log_time_frame(GameNum, Ticks, Action),
         NextTick is Ticks - 1,
         simulate_round(GameNum, NextTick)
@@ -476,6 +548,61 @@ goalkeeper_save(Name, Probability, Dist) :-
     retractall(ball(position(_, _))),
     assertz(ball(position(KX, KY))),
     !.
+
+%----------------------------------------------------------------------
+% Tackle (defenders only)
+%----------------------------------------------------------------------
+
+opponent_team(team1, team2).
+opponent_team(team2, team1).
+
+tackle_radius(4).
+tackle_sigma(2).
+
+% tackle_attempt(+DefenderName)
+% Succeeds when a defender is close enough to the ball AND an opponent is
+% also in kick range of it. Clears the ball toward the defenders own goal.
+tackle_attempt(Name) :-
+    player(Name, Team, defender, position(DX, DY), _, _, _),
+    ball(position(BX, BY)),
+
+    % Defender must be within tackle radius
+    tackle_radius(TackleR),
+    DXDist is abs(BX - DX),
+    DYDist is abs(BY - DY),
+    DXDist =< TackleR,
+    DYDist =< TackleR,
+
+    % An opponent must also be in their kick range (they have the ball)
+    opponent_team(Team, OppTeam),
+    player(OppName, OppTeam, _, position(OX, OY), _, OppSpeed, _),
+    OppKick is sqrt(OppSpeed),
+    abs(BX - OX) =< OppKick,
+    abs(BY - OY) =< OppKick,
+
+    % Probability of success: Gaussian on distance (closer = higher chance)
+    tackle_sigma(Sigma),
+    Dist is sqrt((BX - DX)^2 + (BY - DY)^2),
+    Prob is exp(-(Dist * Dist) / (2 * Sigma * Sigma)),
+    random(Rnd),
+    Rnd < Prob,
+
+    % Success: clear ball toward own attacking goal
+    goal_position(Team, position(TargetX, TargetY)),
+    XDiff is TargetX - BX,
+    YDiff is TargetY - BY,
+    random(R2),
+    KickpowerFactor is (4 * ((R2 - 0.5)^3) + 1),
+    ActualKickpower is 55 * KickpowerFactor,
+    calculate_x_y_distance(ActualKickpower, XDiff, YDiff, XDis, YDis),
+    NewBX is BX + XDis,
+    NewBY is BY + YDis,
+    format('~n*** ~w (defender) TACKLES ~w! Ball cleared to (~w, ~w) ***~n',
+           [Name, OppName, NewBX, NewBY]),
+    retractall(ball(position(_, _))),
+    assertz(ball(position(NewBX, NewBY))),
+    retractall(last_kick(_)),
+    assertz(last_kick(Name)).
 
 build_action(Parts, Action) :-
     filter_action_parts(Parts, Clean),
