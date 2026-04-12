@@ -561,9 +561,9 @@ tackle_sigma(2).
 
 % tackle_attempt(+DefenderName)
 % Succeeds when a defender is close enough to the ball AND an opponent is
-% also in kick range of it. Clears the ball toward the defender's own goal.
+% also in kick range of it. Clears the ball toward the defenders own goal.
 tackle_attempt(Name) :-
-    player(Name, Team, defender, position(DX, DY), _, Speed, _),
+    player(Name, Team, defender, position(DX, DY), _, _, _),
     ball(position(BX, BY)),
 
     % Defender must be within tackle radius
