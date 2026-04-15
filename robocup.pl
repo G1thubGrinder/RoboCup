@@ -152,10 +152,20 @@ running_boundary(Name) :-
       (Role = midfield, FinalX2 < MidLow,  BX >= MidLow)  -> FinalX3 is MidLow  ;
       FinalX3 is FinalX2 ),
 
-    % CASE 5: goalkeeper stays near own goal — only if ball is NOT in their area
-    ( (Role = goalkeeper, Team = team1, FinalX3 > 5,  BX > 5)  -> FinalX4 is 5  ;
-      (Role = goalkeeper, Team = team2, FinalX3 < 115, BX < 115) -> FinalX4 is 115 ;
-      FinalX4 is FinalX3 ),
+    % CASE 5: goalkeeper X — proportional to ball distance
+    %   team1: steps from X=5 (ball near own goal) up to X=20 (ball at center/far)
+    %   team2: steps from X=115 (ball near own goal) down to X=100 (ball at center/far)
+    ( Role = goalkeeper ->
+        field(size(FieldW, _)),
+        ( Team = team1 ->
+            GKX is max(5,  min(20,  5   + round(BX * 15 / FieldW)))
+        ;
+            GKX is max(100, min(115, 115 - round((FieldW - BX) * 15 / FieldW)))
+        ),
+        ( FinalX3 =\= GKX -> FinalX4 is GKX ; FinalX4 is FinalX3 )
+    ;
+        FinalX4 is FinalX3
+    ),
 
     % CASE 6: Y-axis constraints per role
     ( Role = goalkeeper ->
