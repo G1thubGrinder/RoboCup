@@ -49,7 +49,7 @@ restart_new_round :-
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
     
     % team1 — Real Madrid, 2-3-1 on left side
-    assertz(player(ronaldo,    team1, forward,    position(50, 30), 40, 3, 100)),
+    assertz(player(ronaldo,    team1, forward,    position(50, 30), 30, 2.75, 100)),
     assertz(player(modric,     team1, midfield,   position(35, 15), 32, 2,  100)),
     assertz(player(casemiro,   team1, midfield,   position(35, 30), 35, 2, 100)),
     assertz(player(kroos,      team1, midfield,   position(35, 45), 33, 2,  100)),
@@ -122,25 +122,20 @@ running_boundary(Name) :-
     ( X < 0      -> NewX is 0      ; X > FieldW -> NewX is FieldW ; NewX is X ),
     ( Y < 0      -> NewY is 0      ; Y > FieldH -> NewY is FieldH ; NewY is Y ),
 
-    % CASE 2: defenders stay in own half — held back only when ball is NOT in opp. half
-    ( (Role = defender, Team = team1, NewX > HalfW, BX =< HalfW) -> FinalX is HalfW ;
-      (Role = defender, Team = team2, NewX < HalfW, BX >= HalfW) -> FinalX is HalfW ;
-      FinalX is NewX ),
-
-    % CASE 2b: defender must keep 10-unit X gap from nearest same-team midfielder
+    % CASE 2: defender must keep 10-unit X gap from nearest same-team midfielder
     ( (Role = defender, Team = team1) ->
         findall(MX, player(_, team1, midfield, position(MX, _), _, _, _), MidXs),
         ( MidXs \= [], min_list(MidXs, MinMidX) ->
             MaxDefX is MinMidX - 10,
-            ( FinalX > MaxDefX -> FinalXD is MaxDefX ; FinalXD is FinalX )
-        ; FinalXD is FinalX )
+            ( NewX > MaxDefX -> FinalXD is MaxDefX ; FinalXD is NewX )
+        ; FinalXD is NewX )
     ; (Role = defender, Team = team2) ->
         findall(MX, player(_, team2, midfield, position(MX, _), _, _, _), MidXs),
         ( MidXs \= [], max_list(MidXs, MaxMidX) ->
             MinDefX is MaxMidX + 10,
-            ( FinalX < MinDefX -> FinalXD is MinDefX ; FinalXD is FinalX )
-        ; FinalXD is FinalX )
-    ; FinalXD is FinalX ),
+            ( NewX < MinDefX -> FinalXD is MinDefX ; FinalXD is NewX )
+        ; FinalXD is NewX )
+    ; FinalXD is NewX ),
 
     % CASE 3: forwards stay in attacking half — only if ball is NOT in their zone
     ( (Role = forward, Team = team1, FinalXD < HalfW, BX < HalfW) -> FinalX2 is HalfW ;
@@ -152,10 +147,27 @@ running_boundary(Name) :-
       (Role = midfield, FinalX2 < MidLow,  BX >= MidLow)  -> FinalX3 is MidLow  ;
       FinalX3 is FinalX2 ),
 
-    % CASE 5: goalkeeper stays near own goal — only if ball is NOT in their area
-    ( (Role = goalkeeper, Team = team1, FinalX3 > 5,  BX > 5)  -> FinalX4 is 5  ;
-      (Role = goalkeeper, Team = team2, FinalX3 < 115, BX < 115) -> FinalX4 is 115 ;
-      FinalX4 is FinalX3 ),
+    % CASE 5: goalkeeper X — proportional to ball distance
+    %   Exception: if ball is inside the goalkeeper box, release constraint so GK
+    %   can chase the rebound freely and kick it (boundary would otherwise pull them away)
+    %   team1 box: X <= 20   |   team2 box: X >= 100
+    ( Role = goalkeeper ->
+        field(size(FieldW, _)),
+        GKBoxX2 is FieldW - 20,
+        ( (Team = team1, BX =< 20) ->
+            FinalX4 is FinalX3              % ball in box — chase freely
+        ; (Team = team2, BX >= GKBoxX2) ->
+            FinalX4 is FinalX3              % ball in box — chase freely
+        ; Team = team1 ->
+            GKX is max(5,  min(20,  5   + round(BX * 15 / FieldW))),
+            FinalX4 is GKX
+        ;
+            GKX is max(100, min(115, 115 - round((FieldW - BX) * 15 / FieldW))),
+            FinalX4 is GKX
+        )
+    ;
+        FinalX4 is FinalX3
+    ),
 
     % CASE 6: Y-axis constraints per role
     ( Role = goalkeeper ->
@@ -208,8 +220,10 @@ adjust_y_spacing(Y, [TY | Rest], MinDist, FinalY) :-
 %----------------------------------------------------------------------
 
 get_pass_target(Team, Role, TX, TY) :-
-    player(_, Team, Role, position(TX, TY), _, _, _),
-    !. % Pick the first available player with the specified role
+    findall(MX-MY, player(_, Team, Role, position(MX, MY), _, _, _), All),
+    All \= [],
+    random_member(MX-MY, All),
+    TX = MX, TY = MY.
 
 %----------------------------------------------------------------------
 % Player attempt to kicking the ball
@@ -387,16 +401,21 @@ simulate_round(GameNum, Ticks) :-
     ball(position(BX,BY)),
     format('~nBall is now at (~w, ~w) | ', [BX, BY]),
 
-    % Every players move first, then enforce boundary
+    % Every player moves in random order, then enforce boundary
+    findall(N, player(N,_,_,_,_,_,_), AllPlayers),
+    random_permutation(AllPlayers, ShuffledMove),
     forall(
-        player(Name,_,_,_,_,_,_),
+        member(Name, ShuffledMove),
         ( move_towards_ball(Name), running_boundary(Name) )
     ),
-    % Tackle phase: defenders attempt to dispossess nearby opponents
+
+    % Tackle phase: defenders in random order attempt to dispossess opponents
     retractall(ball_kicked),
     retractall(last_kick(_)),
+    findall(N, player(N,_,defender,_,_,_,_), AllDef),
+    random_permutation(AllDef, ShuffledDef),
     forall(
-        player(Name, _, defender, _, _, _, _),
+        member(Name, ShuffledDef),
         ( (\+ ball_kicked, tackle_attempt(Name)) -> assertz(ball_kicked) ; true )
     ),
 
@@ -408,11 +427,13 @@ simulate_round(GameNum, Ticks) :-
     ; ActionTackle = ''
     ),
 
-    % Kick phase: only runs if no tackle happened
+    % Kick phase: random order, only runs if no tackle happened
     ( TackledThisTick = false ->
         retractall(ball_kicked),
+        findall(N, player(N,_,_,_,_,_,_), AllKick),
+        random_permutation(AllKick, ShuffledKick),
         forall(
-            player(Name,_,_,_,_,_,_),
+            member(Name, ShuffledKick),
             ( (\+ ball_kicked, kick_ball(Name)) -> assertz(ball_kicked) ; true )
         )
     ; true ),
