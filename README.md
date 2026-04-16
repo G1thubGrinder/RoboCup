@@ -38,9 +38,15 @@ round_simulation(10).
 This command will generate the match that play for 10 goals. The file **game_log.json** will be exported automatically inside the same directory after this command is executed.
 
 ### 2. Start local server
-Windows
-```cmd or windows-powershell
+#### Open the terminal, and using cd to reach the directory of the project folder. Then run the script.
+
+Windows cmd
+```cmd 
 run.bat
+```
+Windows Powershell
+```powershell
+.\run.bat
 ```
 MacOS and Linux
 ```bash
