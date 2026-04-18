@@ -147,25 +147,29 @@ running_boundary(Name) :-
       (Role = midfield, FinalX2 < MidLow,  BX >= MidLow)  -> FinalX3 is MidLow  ;
       FinalX3 is FinalX2 ),
 
-    % CASE 5: goalkeeper X — proportional to ball distance
-    %   Exception: if ball is inside the goalkeeper box, release constraint so GK
-    %   can chase the rebound freely and kick it (boundary would otherwise pull them away)
-    %   team1 box: X <= 20   |   team2 box: X >= 100
-    ( Role = goalkeeper ->
-        field(size(FieldW, _)),
-        GKBoxX2 is FieldW - 20,
-        ( (Team = team1, BX =< 20) ->
-            FinalX4 is FinalX3              % ball in box — chase freely
-        ; (Team = team2, BX >= GKBoxX2) ->
-            FinalX4 is FinalX3              % ball in box — chase freely
-        ; Team = team1 ->
-            GKX is max(5,  min(20,  5   + round(BX * 15 / FieldW))),
-            FinalX4 is GKX
+    % CASE 5: goalkeeper X — sit on the line between goal centre and ball,
+    % stepped out by at most MaxStep units from the goal line.
+    % This keeps them close enough to cover the goal while narrowing the angle.
+    % Exception: ball inside box → release constraint so GK can chase freely.
+        ( Role = goalkeeper ->
+            field(size(FieldW, _)),
+            GKBoxX2 is FieldW - 20,
+            ( (Team = team1, BX =< 20) ->
+                FinalX4 is FinalX3 % ball in box — chase freely
+            ; (Team = team2, BX >= GKBoxX2) ->
+                FinalX4 is FinalX3 % ball in box — chase freely
+            ; Team = team1 ->
+                % Step out from X=0 toward the ball, but no more than MaxStep units
+                MaxStep is 12,
+                GKX is min(MaxStep, round(MaxStep * BX / FieldW)),
+                FinalX4 is max(0, GKX)
+            ;
+                % team2: step out from X=120 toward the ball, but no more than MaxStep units
+                MaxStep is 12,
+                GKX is max(FieldW - MaxStep, FieldW - round(MaxStep * (FieldW - BX) / FieldW)),
+                FinalX4 is min(FieldW, GKX)
+            )
         ;
-            GKX is max(100, min(115, 115 - round((FieldW - BX) * 15 / FieldW))),
-            FinalX4 is GKX
-        )
-    ;
         FinalX4 is FinalX3
     ),
 
