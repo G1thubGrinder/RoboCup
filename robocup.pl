@@ -332,30 +332,13 @@ ball_out_of_field(Team) :-
 %----------------------------------------------------------------------
 
 goal_kick_back(Team) :-
-    format('~n*** Ball out! ~w goal kicks ***~n', [Team]),
-
-    %Decide kick position
-    goal_position(Team, position(GoalX, _)),
-    ball(position(_, BY)),
-    field(size(_, MaxY)),
-    KickY is min(max(BY, 0), MaxY),
+    % Step 1 of 2: move ball to the goalkeeper current position.
+    % The goalkeeper will kick it naturally in the next tick via kick_ball.
+    player(GKName, Team, goalkeeper, position(GKX, GKY), _, _, _),
     retractall(ball(position(_, _))),
-    assertz(ball(position(GoalX, KickY))),
-
-    %Kick toward center
-    CenterX is 60,
-    CenterY is 30,
-    XDiff is CenterX - GoalX,
-    YDiff is CenterY - KickY,
-    random(R1),
-    KickpowerFactor is (4 * ((R1 - 0.5)**3) + 1),
-    ActualGoalKickpower is 80 * KickpowerFactor,
-    calculate_x_y_distance(ActualGoalKickpower, XDiff, YDiff, XDis, YDis),
-    NewBX is GoalX + XDis,
-    NewBY is KickY + YDis,
-    format('Goalkeeper (~w) kicks from (~w,~w) to (~w,~w)~n', [Team, GoalX, KickY, NewBX, NewBY]),
-    retractall(ball(position(_, _))),
-    assertz(ball(position(NewBX, NewBY))).
+    assertz(ball(position(GKX, GKY))),
+    format('~n*** Ball out! Ball moved to ~w goalkeeper ~w at (~w, ~w) — kick next tick ***~n',
+           [Team, GKName, GKX, GKY]).
 
 %----------------------------------------------------------------------
 % Check goal
