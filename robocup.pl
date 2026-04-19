@@ -332,13 +332,17 @@ ball_out_of_field(Team) :-
 %----------------------------------------------------------------------
 
 goal_kick_back(Team) :-
-    % Step 1 of 2: move ball to the goalkeeper current position.
-    % The goalkeeper will kick it naturally in the next tick via kick_ball.
-    player(GKName, Team, goalkeeper, position(GKX, GKY), _, _, _),
+    format('~n*** Ball out! ~w goal kicks ***~n', [Team]),
+
+    %move ball back to the penalty box for the goalkeeper
+    PenaltyY is 30,
+    ( Team = team1 -> 
+        PenaltyX is 8      % Team 1's penalty box (left side)
+    ; 
+        PenaltyX is 112     % Team 2's penalty box (right side)
+    ),
     retractall(ball(position(_, _))),
-    assertz(ball(position(GKX, GKY))),
-    format('~n*** Ball out! Ball moved to ~w goalkeeper ~w at (~w, ~w) — kick next tick ***~n',
-           [Team, GKName, GKX, GKY]).
+    assertz(ball(position(PenaltyX, PenaltyY))).
 
 %----------------------------------------------------------------------
 % Check goal
