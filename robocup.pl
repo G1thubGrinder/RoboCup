@@ -4,7 +4,6 @@
 :- dynamic score/2.
 :- dynamic game_log/1.
 :- dynamic current_game/2.
-:- dynamic current_time/2.
 :- dynamic ball_kicked/0.
 :- dynamic last_kick/1.
 
@@ -632,19 +631,6 @@ end_game(GameNum) :-
     retract(game_log(Games)),
     append(Games, [GameEntry], NewGames),
     assertz(game_log(NewGames)).
-
-count_goals(Times, Team1, Team2) :-
-    count_goals(Times, 0, 0, Team1, Team2).
-
-count_goals([], T1, T2, T1, T2).
-count_goals([time_entry(_, goal, team1) | Rest], T1, T2, R1, R2) :-
-    T1Next is T1 + 1,
-    count_goals(Rest, T1Next, T2, R1, R2).
-count_goals([time_entry(_, goal, team2) | Rest], T1, T2, R1, R2) :-
-    T2Next is T2 + 1,
-    count_goals(Rest, T1, T2Next, R1, R2).
-count_goals([_ | Rest], T1, T2, R1, R2) :-
-    count_goals(Rest, T1, T2, R1, R2).
 
 export_json(FileName):-
     game_log(Games),
