@@ -49,21 +49,21 @@ restart_new_round :-
     % player(Name, Team, Role, position(X,Y), Kickpower, Speed, Stamina)
     
     % team1 — Real Madrid, 2-3-1 on left side
-    assertz(player(ronaldo,    team1, forward,    position(50, 30), 30, 2.75, 100)),
-    assertz(player(modric,     team1, midfield,   position(35, 15), 32, 2,  100)),
-    assertz(player(casemiro,   team1, midfield,   position(35, 30), 35, 2, 100)),
-    assertz(player(kroos,      team1, midfield,   position(35, 45), 33, 2,  100)),
-    assertz(player(varane,     team1, defender,   position(15, 23), 40, 1.5,  100)),
-    assertz(player(ramos,      team1, defender,   position(15, 37), 40, 1.5,  100)),
+    assertz(player(ronaldo,    team1, forward,    position(50, 30), 25, 3, 100)),
+    assertz(player(modric,     team1, midfield,   position(35, 15), 32, 2.5,  100)),
+    assertz(player(casemiro,   team1, midfield,   position(35, 30), 35, 2.5, 100)),
+    assertz(player(kroos,      team1, midfield,   position(35, 45), 33, 2.5,  100)),
+    assertz(player(varane,     team1, defender,   position(15, 23), 40, 2,  100)),
+    assertz(player(ramos,      team1, defender,   position(15, 37), 40, 2,  100)),
     assertz(player(navas,      team1, goalkeeper, position(1,  30), 67, 1.5,  100)),
 
     % team2 — Barcelona, 2-3-1 on right side
-    assertz(player(messi,     team2, forward,    position(70, 30), 30, 2.5, 100)),
-    assertz(player(iniesta,    team2, midfield,   position(85, 15), 32, 2,  100)),
-    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 2,  100)),
-    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 2,  100)),
-    assertz(player(pique,      team2, defender,   position(105, 23), 46, 1.5, 100)),
-    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 1.5, 100)),
+    assertz(player(messi,     team2, forward,    position(70, 30), 25, 3, 100)),
+    assertz(player(iniesta,    team2, midfield,   position(85, 15), 32, 2.5,  100)),
+    assertz(player(busquets,   team2, midfield,   position(85, 30), 35, 2.5,  100)),
+    assertz(player(xavi,       team2, midfield,   position(85, 45), 42, 2.5,  100)),
+    assertz(player(pique,      team2, defender,   position(105, 23), 46, 2, 100)),
+    assertz(player(mascherano, team2, defender,   position(105, 37), 48, 2, 100)),
     assertz(player(bravo,      team2, goalkeeper, position(119, 30), 65, 1.5, 100)).
 
 %goal_position(team1, position()) means team1 is attacking, goal of team2
@@ -506,52 +506,6 @@ round_simulation(RoundCount, TotalRoundCount):-
     round_simulation(NewRoundCount, TotalRoundCount).
 
 %----------------------------------------------------------------------
-% Logging function
-%----------------------------------------------------------------------
-
-init_log :-
-    retractall(game_log(_)),
-    assertz(game_log([])).
-
-begin_game(GameNum) :-
-    retractall(current_game(_,_)),
-    assertz(current_game(GameNum, [])).
-
-log_time_frame(GameNum, TimeNum, Action) :-
-    ball(position(BX, BY)),
-    % Collect all player snapshots inside that time frame
-    findall(
-        player_snap(Name, Team, Role, PX, PY),
-        player(Name, Team, Role, position(PX, PY), _, _, _),
-        PlayerSnaps
-    ),
-    TimeFrame = time_frame(TimeNum, ball(BX, BY), PlayerSnaps, Action),
-    retract(current_game(GameNum, Times)),
-    append(Times, [TimeFrame], NewTimes),
-    assertz(current_game(GameNum, NewTimes)).
-
-end_game(GameNum) :-
-    current_game(GameNum, Times),
-    score(S1, S2),
-    GameEntry = game_entry(GameNum, S1, S2, Times),
-    retract(game_log(Games)),
-    append(Games, [GameEntry], NewGames),
-    assertz(game_log(NewGames)).
-
-count_goals(Times, Team1, Team2) :-
-    count_goals(Times, 0, 0, Team1, Team2).
-
-count_goals([], T1, T2, T1, T2).
-count_goals([time_entry(_, goal, team1) | Rest], T1, T2, R1, R2) :-
-    T1Next is T1 + 1,
-    count_goals(Rest, T1Next, T2, R1, R2).
-count_goals([time_entry(_, goal, team2) | Rest], T1, T2, R1, R2) :-
-    T2Next is T2 + 1,
-    count_goals(Rest, T1, T2Next, R1, R2).
-count_goals([_ | Rest], T1, T2, R1, R2) :-
-    count_goals(Rest, T1, T2, R1, R2).
-
-%----------------------------------------------------------------------
 % Goalkeeper Movement
 %----------------------------------------------------------------------
 
@@ -649,6 +603,48 @@ filter_action_parts([H | Tail], [H | CleanTail]) :-
 %----------------------------------------------------------------------
 
 %This part is trying to imitate JSON format and write to variable Stream with prolog write 
+
+init_log :-
+    retractall(game_log(_)),
+    assertz(game_log([])).
+
+begin_game(GameNum) :-
+    retractall(current_game(_,_)),
+    assertz(current_game(GameNum, [])).
+
+log_time_frame(GameNum, TimeNum, Action) :-
+    ball(position(BX, BY)),
+    % Collect all player snapshots inside that time frame
+    findall(
+        player_snap(Name, Team, Role, PX, PY),
+        player(Name, Team, Role, position(PX, PY), _, _, _),
+        PlayerSnaps
+    ),
+    TimeFrame = time_frame(TimeNum, ball(BX, BY), PlayerSnaps, Action),
+    retract(current_game(GameNum, Times)),
+    append(Times, [TimeFrame], NewTimes),
+    assertz(current_game(GameNum, NewTimes)).
+
+end_game(GameNum) :-
+    current_game(GameNum, Times),
+    score(S1, S2),
+    GameEntry = game_entry(GameNum, S1, S2, Times),
+    retract(game_log(Games)),
+    append(Games, [GameEntry], NewGames),
+    assertz(game_log(NewGames)).
+
+count_goals(Times, Team1, Team2) :-
+    count_goals(Times, 0, 0, Team1, Team2).
+
+count_goals([], T1, T2, T1, T2).
+count_goals([time_entry(_, goal, team1) | Rest], T1, T2, R1, R2) :-
+    T1Next is T1 + 1,
+    count_goals(Rest, T1Next, T2, R1, R2).
+count_goals([time_entry(_, goal, team2) | Rest], T1, T2, R1, R2) :-
+    T2Next is T2 + 1,
+    count_goals(Rest, T1, T2Next, R1, R2).
+count_goals([_ | Rest], T1, T2, R1, R2) :-
+    count_goals(Rest, T1, T2, R1, R2).
 
 export_json(FileName):-
     game_log(Games),
